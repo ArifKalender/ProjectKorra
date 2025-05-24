@@ -1,32 +1,27 @@
 package com.projectkorra.projectkorra.waterbending.ice;
 
 import com.projectkorra.projectkorra.GeneralMethods;
-import com.projectkorra.projectkorra.ProjectKorra;
-import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.IceAbility;
 import com.projectkorra.projectkorra.ability.SubAbility;
-import com.projectkorra.projectkorra.ability.util.Collision;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.attribute.markers.DayNightFactor;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 import org.bukkit.*;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class FrostBreath extends IceAbility implements SubAbility {
 
     /* General config variables */
     @Attribute(Attribute.COOLDOWN)
-    @DayNightFactor
+    @DayNightFactor (invert = true)
     private long cooldown;
     @Attribute(Attribute.DURATION)
     @DayNightFactor
@@ -60,7 +55,7 @@ public class FrostBreath extends IceAbility implements SubAbility {
 
     /* Non-config variables */
     Location abilLoc;
-    List<String> biomeList = new ArrayList<>();
+    Set<Biome> biomeList = new HashSet<Biome>();
     HashMap<Entity, Long> breathTime = new HashMap<Entity, Long>();
 
     public FrostBreath(Player player) {
@@ -68,8 +63,7 @@ public class FrostBreath extends IceAbility implements SubAbility {
 
         if (bPlayer.canBend(this) && !hasAbility(player, FrostBreath.class)) {
             setFields();
-            if (!biomeList.contains(player.getEyeLocation().getBlock().getBiome().toString().toUpperCase())) {
-                setCollisions();
+            if (!biomeList.contains(player.getEyeLocation().getBlock().getBiome())) {
                 start();
             }
         }
@@ -101,13 +95,8 @@ public class FrostBreath extends IceAbility implements SubAbility {
         timeRequired = ConfigManager.getConfig().getLong("Abilities.Water.FrostBreath.Ice.BreathTimeRequiredToFreeze");
 
         for (String s : ConfigManager.getConfig().getStringList("Abilities.Water.FrostBreath.DisallowedBiomes")) {
-            biomeList.add(s);
+            biomeList.add(Biome.valueOf(s));
         }
-    }
-
-    private void setCollisions() {
-        ProjectKorra.collisionManager.addCollision(new Collision(CoreAbility.getAbility("FrostBreath"), CoreAbility.getAbility("AirShield"), true, false));
-        ProjectKorra.collisionManager.addCollision(new Collision(CoreAbility.getAbility("FrostBreath"), CoreAbility.getAbility("FireShield"), true, true));
     }
 
     private void breathAnimation() {
@@ -170,15 +159,8 @@ public class FrostBreath extends IceAbility implements SubAbility {
 
     private void setIce(LivingEntity entity) {
         Location loc = entity.getLocation().add(0, 0.46875, 0);
-        List<Block> toFreeze = new ArrayList<Block>();
-
-        toFreeze.add(entity.getEyeLocation().add(0, 1, 0).getBlock());
 
         for (Block block : GeneralMethods.getBlocksAroundPoint(loc, 1.7)) {
-            toFreeze.add(block);
-        }
-
-        for (Block block : toFreeze) {
             if (block.isPassable()) {
                 TempBlock ice = new TempBlock(block, Material.ICE.createBlockData(), iceDuration, this);
                 ice.setCanSuffocate(iceDamage);
@@ -194,7 +176,6 @@ public class FrostBreath extends IceAbility implements SubAbility {
         target = origin.clone();
         while (target.distance(origin) < range) {
             target.add(player.getEyeLocation().getDirection());
-            List<Block> snowList = new ArrayList<Block>();
 
             if (!target.getBlock().isPassable()) {
                 break;
@@ -204,7 +185,8 @@ public class FrostBreath extends IceAbility implements SubAbility {
                 if (!block.isPassable()) {
                     Block upperBlock = block.getLocation().add(0, 1, 0).getBlock();
                     if (upperBlock.isPassable() && upperBlock.getType() != Material.WATER && block.getType() != Material.ICE && block.getType() != Material.SNOW) {
-                        snowList.add(block.getLocation().add(0, 1, 0).getBlock());
+                        TempBlock snow = new TempBlock(upperBlock, Material.SNOW.createBlockData(), snowDuration);
+                        snow.setBendableSource(bendableSnow);
                     }
                 } else if (block.getType() == Material.WATER) {
                     TempBlock ice = new TempBlock(block, Material.ICE.createBlockData(), snowDuration);
@@ -213,11 +195,6 @@ public class FrostBreath extends IceAbility implements SubAbility {
                 }
             }
 
-
-            for (Block block : snowList) {
-                TempBlock snow = new TempBlock(block, Material.SNOW.createBlockData(), snowDuration);
-                snow.setBendableSource(bendableSnow);
-            }
         }
 
     }
@@ -233,7 +210,6 @@ public class FrostBreath extends IceAbility implements SubAbility {
 
         breathAnimation();
         formHitbox();
-        setCollisions();
         if (snow) {
             formSnow();
         }

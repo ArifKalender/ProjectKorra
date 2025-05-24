@@ -50,6 +50,7 @@ import com.projectkorra.projectkorra.waterbending.blood.Bloodbending;
 import com.projectkorra.projectkorra.waterbending.combo.IceBullet;
 import com.projectkorra.projectkorra.waterbending.combo.IceWave;
 import com.projectkorra.projectkorra.waterbending.healing.HealingWaters;
+import com.projectkorra.projectkorra.waterbending.ice.FrostBreath;
 import com.projectkorra.projectkorra.waterbending.ice.IceBlast;
 import com.projectkorra.projectkorra.waterbending.ice.IceSpikeBlast;
 
@@ -129,10 +130,11 @@ public class CollisionInitializer {
 		CoreAbility.getAbility(TorrentWave.class);
 		CoreAbility.getAbility(WaterBubble.class);
 		final CoreAbility waterManipulation = CoreAbility.getAbility(WaterManipulation.class);
+		final CoreAbility frostBreath = CoreAbility.getAbility(FrostBreath.class);
 		CoreAbility.getAbility(WaterSpout.class);
 		CoreAbility.getAbility(WaterSpoutWave.class);
 
-		final CoreAbility[] smallAbils = { airSwipe, earthBlast, waterManipulation, iceBlast, iceSpikeBlast, fireBlast };
+		final CoreAbility[] smallAbils = { airSwipe, earthBlast, waterManipulation, iceBlast, iceSpikeBlast, fireBlast, frostBreath };
 		final CoreAbility[] largeAbils = { earthSmash, airShield, fireBlastCharged, fireKick, fireSpin, fireWheel, airSweep, iceBullet };
 		final CoreAbility[] comboAbils = { fireKick, fireSpin, fireWheel, airSweep, iceBullet };
 		final CoreAbility[] removeSpoutAbils = { airSwipe, earthBlast, waterManipulation, iceBlast, iceSpikeBlast, fireBlast, fireBlastCharged, earthSmash, fireKick, fireSpin, fireWheel, airSweep, iceBullet };
@@ -179,6 +181,7 @@ public class CollisionInitializer {
 		this.collisionManager.addCollision(new Collision(fireManipulation, waterManipulation, false, true));
 		this.collisionManager.addCollision(new Collision(fireManipulation, earthBlast, false, true));
 		this.collisionManager.addCollision(new Collision(fireManipulation, airSweep, false, true));
+
 	}
 
 	/**
