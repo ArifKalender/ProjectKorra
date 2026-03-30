@@ -2,4 +2,3 @@
 
 Current Depends that need it
 - LWC (Maven repo is unreliable and may make maven take half an hour just to compile)
-- Residence (No maven repo or GitHub releases to use via Jitpack)

@@ -45,7 +45,7 @@
       <id>sk89q-repo</id>
       <url>https://maven.enginehub.org/repo/</url>
     </repository>
-    <!-- GriefPrevention, Towny and SaberFactions Repo -->
+    <!-- GriefPrevention, Towny, Residence and SaberFactions Repo -->
     <repository>
       <id>jitpack.io</id>
       <url>https://jitpack.io</url>
@@ -74,6 +74,11 @@
     <repository>
       <id>glaremasters</id>
       <url>https://repo.glaremasters.me/repository/bloodshot</url>
+    </repository>
+    <!-- net.kyori EventAPI Repo -->
+    <repository>
+      <id>phoenix616</id>
+      <url>https://repo.phoenix616.dev/</url>
     </repository>
     <!-- LWC. Disabled for now because the repo is extremely unreliable and times out a lot -->
     <!--<repository>
@@ -166,9 +171,9 @@
     </dependency>
     <!-- Residence -->
     <dependency>
-      <groupId>com.bekvon.bukkit</groupId>
-      <artifactId>residence</artifactId>
-      <version>5.0.1.0</version>
+      <groupId>com.github.Zrips</groupId>
+      <artifactId>Residence</artifactId>
+      <version>6.0.0.1</version>
       <scope>provided</scope>
     </dependency>
     <!-- Towny -->
