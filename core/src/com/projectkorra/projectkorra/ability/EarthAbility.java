@@ -101,9 +101,15 @@ public abstract class EarthAbility extends ElementalAbility {
 	public static boolean isBendableEarthTempBlock(final Block block) {
 		return isBendableEarthTempBlock(TempBlock.get(block));
 	}
-	
+
 	public static boolean isBendableEarthTempBlock(final TempBlock tempBlock) {
-		return DensityShift.getSandBlocks().contains(tempBlock);
+		return isBendableEarthTempBlock(tempBlock, false, true, false, true);
+	}
+
+	public static boolean isBendableEarthTempBlock(final TempBlock tempBlock, final boolean metal, final boolean sand, final boolean lava, final boolean mud) {
+		boolean legacyDetection = DensityShift.getSandBlocks().contains(tempBlock);
+		boolean detection = (tempBlock.isBendableSource() && isEarthbendable(tempBlock.getBlock().getType(), metal, sand, lava, mud));
+		return detection || legacyDetection;
 	}
 
 	public static boolean isEarthbendable(final Material material, final boolean metal, final boolean sand, final boolean lava, final boolean mud) {
