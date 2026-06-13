@@ -200,7 +200,7 @@ public class TempBlock {
 	 * @param block The block location
 	 */
 	public static void removeBlock(final Block block) {
-		instances_.get(block).forEach(t -> {
+		new ArrayList<>(instances_.get(block)).forEach(t -> { // Prevent ConcurrentModificationException
 			REVERT_QUEUE.remove(t);
 			remove(t);
 		});

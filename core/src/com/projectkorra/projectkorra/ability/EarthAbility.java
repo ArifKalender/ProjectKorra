@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.bukkit.block.BlockState;
+
 import com.projectkorra.projectkorra.region.RegionProtection;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -97,7 +99,6 @@ public abstract class EarthAbility extends ElementalAbility {
 			ParticleEffect.BLOCK_CRACK.display(collision.getLocationFirst(), 10, 1, 1, 1, 0.1, Material.DIRT.createBlockData());
 		}
 	}
-	
 	public static boolean isBendableEarthTempBlock(final Block block) {
 		return isBendableEarthTempBlock(TempBlock.get(block));
 	}
@@ -154,6 +155,14 @@ public abstract class EarthAbility extends ElementalAbility {
 
 	public boolean moveEarth(Block block, final Vector direction, final int chainlength, final boolean throwplayer) {
 		if ((!TempBlock.isTempBlock(block) || isBendableEarthTempBlock(block)) && this.isEarthbendable(block) && !GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation())) {
+			// If the source block is a bendable TempBlock remove it before moving.
+			BlockState tempBlockOriginalState = null;
+			if (TempBlock.isTempBlock(block) && isBendableEarthTempBlock(block)
+					&& !DensityShift.isPassiveSand(block)) {
+				tempBlockOriginalState = TempBlock.get(block).getState();
+				TempBlock.removeBlock(block); // revertBlock is async via paper and could eventually race
+			}
+
 			boolean up = false;
 			boolean down = false;
 			final Vector norm = direction.clone().normalize();
@@ -196,7 +205,7 @@ public abstract class EarthAbility extends ElementalAbility {
 							if (lentity.getEyeLocation().getBlockX() == affectedblock.getX() && lentity.getEyeLocation().getBlockZ() == affectedblock.getZ()) {
 								if (!(entity instanceof FallingBlock)) {
 									GeneralMethods.setVelocity(this, entity, norm.clone().multiply(.75));
-									
+
 								}
 							}
 						} else {
@@ -220,13 +229,22 @@ public abstract class EarthAbility extends ElementalAbility {
 				}
 
 				moveEarthBlock(block, affectedblock);
+				// If source was a bendable TempBlock, override the stored state in MOVED_EARTH
+				// with the TempBlock's original state so revert restores the correct block
+				if (tempBlockOriginalState != null && MOVED_EARTH.containsKey(affectedblock)) {
+					MOVED_EARTH.get(affectedblock).setState(tempBlockOriginalState);
+				}
 
-				// Play sound every other tick, but also alternate on the tick that it should occur on for each different ability
 				if ((CoreAbility.getCurrentTick() + this.getId()) % (2 + this.noiseReduction) == 0)
 					playEarthbendingSound(block.getLocation());
 
 				for (double i = 1; i < chainlength; i++) {
 					affectedblock = location.clone().add(negnorm.getX() * i, negnorm.getY() * i, negnorm.getZ() * i).getBlock();
+					BlockState chainTempBlockState = null;
+					if (TempBlock.isTempBlock(affectedblock) && isBendableEarthTempBlock(affectedblock) && !DensityShift.isPassiveSand(affectedblock)) {
+						chainTempBlockState = TempBlock.get(affectedblock).getState();
+						TempBlock.removeBlock(affectedblock);
+					}
 					if (!this.isEarthbendable(affectedblock)) {
 						if (down) {
 							if (this.isTransparent(affectedblock) && !affectedblock.isLiquid() && !isAir(affectedblock.getType())) {
@@ -245,6 +263,9 @@ public abstract class EarthAbility extends ElementalAbility {
 						return false;
 					}
 					moveEarthBlock(affectedblock, block);
+					if (chainTempBlockState != null && MOVED_EARTH.containsKey(block)) {
+						MOVED_EARTH.get(block).setState(chainTempBlockState);
+					}
 					block = affectedblock;
 				}
 
