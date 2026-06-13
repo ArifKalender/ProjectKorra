@@ -235,6 +235,7 @@ public abstract class EarthAbility extends ElementalAbility {
 					MOVED_EARTH.get(affectedblock).setState(tempBlockOriginalState);
 				}
 
+				// Play sound every other tick, but also alternate on the tick that it should occur on for each different ability
 				if ((CoreAbility.getCurrentTick() + this.getId()) % (2 + this.noiseReduction) == 0)
 					playEarthbendingSound(block.getLocation());
 
