@@ -8,10 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.block.BlockState;
 
 import com.projectkorra.projectkorra.region.RegionProtection;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -33,7 +30,6 @@ import com.projectkorra.projectkorra.earthbending.lava.LavaFlow;
 import com.projectkorra.projectkorra.earthbending.passive.DensityShift;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.Information;
-import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 public abstract class EarthAbility extends ElementalAbility {
@@ -96,7 +92,7 @@ public abstract class EarthAbility extends ElementalAbility {
 	public void handleCollision(final Collision collision) {
 		super.handleCollision(collision);
 		if (collision.isRemovingFirst()) {
-			ParticleEffect.BLOCK_CRACK.display(collision.getLocationFirst(), 10, 1, 1, 1, 0.1, Material.DIRT.createBlockData());
+			collision.getLocationFirst().getWorld().spawnParticle(Particle.BLOCK, collision.getLocationFirst(), 10, 1, 1, 1, 0.1, Material.DIRT.createBlockData(), true);
 		}
 	}
 	public static boolean isBendableEarthTempBlock(final Block block) {
@@ -332,8 +328,8 @@ public abstract class EarthAbility extends ElementalAbility {
 		final Material sand = red ? Material.RED_SAND : Material.SAND;
 		final Material stone = red ? Material.RED_SANDSTONE : Material.SANDSTONE;
 
-		ParticleEffect.BLOCK_CRACK.display(loc, amount, xOffset, yOffset, zOffset, speed, sand.createBlockData());
-		ParticleEffect.BLOCK_CRACK.display(loc, amount, xOffset, yOffset, zOffset, speed, stone.createBlockData());
+		loc.getWorld().spawnParticle(Particle.BLOCK, loc, amount, xOffset, yOffset, zOffset, speed, sand.createBlockData());
+		loc.getWorld().spawnParticle(Particle.BLOCK, loc, amount, xOffset, yOffset, zOffset, speed, stone.createBlockData());
 	}
 
 	/**
@@ -562,10 +558,7 @@ public abstract class EarthAbility extends ElementalAbility {
 			final float volume = (float) getConfig().getDouble("Properties.Earth.MudSound.Volume");
 			final float pitch = (float) getConfig().getDouble("Properties.Earth.MudSound.Pitch");
 
-			Sound sound = Sound.BLOCK_GRAVEL_BREAK;
-			if (GeneralMethods.getMCVersion() >= 1190) {
-				sound = Sound.valueOf("BLOCK_MUD_PLACE");
-			}
+			Sound sound = Sound.BLOCK_MUD_PLACE;
 
 			try {
 				sound = Sound.valueOf(getConfig().getString("Properties.Earth.MudSound.Sound"));
