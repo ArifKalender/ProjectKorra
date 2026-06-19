@@ -203,7 +203,7 @@ public class FrostBreath extends IceAbility implements SubAbility {
             for (Block block : GeneralMethods.getBlocksAroundPoint(target.clone().add(0, -1, 0), 1 + ((target.distance(origin) / range) * particleExpansion))) {
                 if (!block.isPassable()) {
                     Block upperBlock = block.getLocation().add(0, 1, 0).getBlock();
-                    if (upperBlock.isPassable() && upperBlock.getType() != Material.WATER && block.getType() != Material.ICE && block.getType() != Material.SNOW) {
+                    if (upperBlock.isPassable() && upperBlock.getType() != Material.WATER && upperBlock.getType() != Material.ICE && upperBlock.getType() != Material.SNOW) {
                         snowList.add(block.getLocation().add(0, 1, 0).getBlock());
                     }
                 } else if (block.getType() == Material.WATER) {
