@@ -96,6 +96,10 @@
       <url>https://repo.william278.net/releases</url>
     </repository>
 
+    <repository>
+      <id>phoenix616</id>
+      <url>https://repo.phoenix616.dev</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -116,11 +120,11 @@
       <version>1.0.1</version>
     </dependency>
     <!-- Minecraft Timings -->
-    <!-- Spigot API -->
+    <!-- Paper API -->
     <dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>spigot-api</artifactId>
-      <version>1.20-R0.1-SNAPSHOT</version>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <version>1.21.11-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <!-- lang3 -->
