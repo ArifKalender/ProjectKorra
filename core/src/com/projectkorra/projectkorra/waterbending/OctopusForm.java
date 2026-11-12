@@ -478,7 +478,7 @@ public class OctopusForm extends WaterAbility {
 		for (final TempBlock block : this.blocks) {
 			block.revertBlock();
 		}
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 
 			@Override
 			public void run() {

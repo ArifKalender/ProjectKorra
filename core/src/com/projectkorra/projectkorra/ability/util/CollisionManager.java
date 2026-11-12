@@ -57,7 +57,7 @@ public class CollisionManager {
 	private double certainNoCollisionDistance;
 
 	private ArrayList<Collision> collisions;
-	private BukkitRunnable detectionRunnable;
+	private BukkitRunnable detectionRunnable; //TODO: Migrate scheduler
 
 	public CollisionManager() {
 		this.removeMultipleInstances = true;
@@ -207,7 +207,7 @@ public class CollisionManager {
 	 */
 	public void startCollisionDetection() {
 		this.stopCollisionDetection();
-		this.detectionRunnable = new BukkitRunnable() {
+		this.detectionRunnable = new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				CollisionManager.this.detectCollisions();
@@ -258,11 +258,12 @@ public class CollisionManager {
 		this.collisions = collisions;
 	}
 
-	public BukkitRunnable getDetectionRunnable() {
+	public BukkitRunnable getDetectionRunnable() { //TODO: Migrate scheduler
 		return this.detectionRunnable;
 	}
 
 	public void setDetectionRunnable(final BukkitRunnable detectionRunnable) {
+
 		this.detectionRunnable = detectionRunnable;
 	}
 

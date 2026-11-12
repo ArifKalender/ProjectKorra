@@ -90,7 +90,7 @@ public class Preset {
 	 * @param player The Player who's Presets should be loaded
 	 */
 	public static void loadPresets(final Player player) {
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				final UUID uuid = player.getUniqueId();
@@ -279,7 +279,7 @@ public class Preset {
 	public CompletableFuture<Boolean> delete() {
 		Preset instance = this;
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				try {
@@ -312,7 +312,7 @@ public class Preset {
 	 */
 	public CompletableFuture<Boolean> save(final Player player) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				try {

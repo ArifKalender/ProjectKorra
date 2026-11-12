@@ -37,7 +37,7 @@ public class AirStream extends AirAbility implements ComboAbility {
 	private Location destination;
 	private Vector direction;
 	private ArrayList<Entity> affectedEntities;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 
 	public AirStream(final Player player) {
 		super(player);
@@ -129,7 +129,7 @@ public class AirStream extends AirAbility implements ComboAbility {
 		}
 
 		for (int i = 0; i < 10; i++) {
-			final BukkitRunnable br = new BukkitRunnable() {
+			final BukkitRunnable br = new BukkitRunnable() { //TODO: Migrate scheduler
 				final Location loc = AirStream.this.currentLoc.clone();
 				final Vector dir = AirStream.this.direction.clone();
 
@@ -168,7 +168,7 @@ public class AirStream extends AirAbility implements ComboAbility {
 	@Override
 	public void remove() {
 		super.remove();
-		for (final BukkitRunnable task : this.tasks) {
+		for (final BukkitRunnable task : this.tasks) { //TODO: Migrate scheduler
 			task.cancel();
 		}
 	}
@@ -279,11 +279,11 @@ public class AirStream extends AirAbility implements ComboAbility {
 		return this.affectedEntities;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 
-	public void setTasks(final ArrayList<BukkitRunnable> tasks) {
+	public void setTasks(final ArrayList<BukkitRunnable> tasks) { //TODO: Migrate scheduler
 		this.tasks = tasks;
 	}
 

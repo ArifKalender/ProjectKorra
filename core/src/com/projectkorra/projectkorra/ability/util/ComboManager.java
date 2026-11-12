@@ -66,7 +66,7 @@ public class ComboManager {
 			return;
 		}
 
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				if (comboAbil.getComboType() instanceof Class) {
@@ -227,7 +227,7 @@ public class ComboManager {
 	}
 
 	public static void startCleanupTask() {
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				cleanupOldCombos();

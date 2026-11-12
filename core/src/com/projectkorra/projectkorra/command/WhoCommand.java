@@ -58,7 +58,7 @@ public class WhoCommand extends PKCommand {
 		this.playerOffline = ConfigManager.languageConfig.get().getString("Commands.Who.PlayerOffline");
 		this.playerUnknown = ConfigManager.languageConfig.get().getString("Commands.Who.PlayerUnknown");
 
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				final Map<String, String> updatedstaff = new HashMap<String, String>();

@@ -19,6 +19,7 @@ import com.projectkorra.projectkorra.configuration.ConfigManager;
 
 import io.papermc.lib.PaperLib;
 
+//TODO: Migrate scheduler
 public class RevertChecker implements Runnable {
 
 	private final ProjectKorra plugin;

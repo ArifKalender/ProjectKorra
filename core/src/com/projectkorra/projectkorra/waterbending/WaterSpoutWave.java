@@ -83,7 +83,7 @@ public class WaterSpoutWave extends WaterAbility {
 	private Location origin;
 	private Location location;
 	private ArrayList<Entity> affectedEntities;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
 
 	public WaterSpoutWave(final Player player, final AbilityType type) {
@@ -314,7 +314,7 @@ public class WaterSpoutWave extends WaterAbility {
 							final Player fplayer = this.player;
 							final Entity fent = entity;
 
-							new BukkitRunnable() {
+							new BukkitRunnable() { //TODO: Migrate scheduler
 								@Override
 								public void run() {
 									WaterSpoutWave.this.createIceSphere(fplayer, fent, iceSphereRadius);
@@ -356,13 +356,13 @@ public class WaterSpoutWave extends WaterAbility {
 			this.bPlayer.addCooldown("WaterSpoutWave", getCooldown());
 		}
 		this.revertBlocks();
-		for (final BukkitRunnable task : this.tasks) {
+		for (final BukkitRunnable task : this.tasks) { //TODO: Migrate scheduler
 			task.cancel();
 		}
 	}
 
 	public void createBlockDelay(final Block block, final Material mat, final long delay) {
-		final BukkitRunnable br = new BukkitRunnable() {
+		final BukkitRunnable br = new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				WaterSpoutWave.this.createBlock(block, block.getLocation().distance(player.getLocation()) >= 1.6 ? mat : Material.WATER);
@@ -695,7 +695,7 @@ public class WaterSpoutWave extends WaterAbility {
 		return this.affectedEntities;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 

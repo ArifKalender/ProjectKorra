@@ -845,7 +845,7 @@ public class BendingPlayer extends OfflineBendingPlayer {
 			for (final String str : bound.values()) {
 				if (str.equalsIgnoreCase("AirSpout") || str.equalsIgnoreCase("WaterSpout") || str.equalsIgnoreCase("SandSpout")) {
 					final Player fplayer = this.player;
-					new BukkitRunnable() {
+					new BukkitRunnable() { //TODO: Migrate scheduler
 						@Override
 						public void run() {
 							fplayer.setFlying(false);

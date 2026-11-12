@@ -76,7 +76,7 @@ public class LavaFlow extends LavaAbility {
 	private AbilityType type;
 	private Location origin;
 	private ArrayList<TempBlock> affectedBlocks;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 	private Material revertMaterial;
 	private World world;
 
@@ -105,7 +105,7 @@ public class LavaFlow extends LavaAbility {
 		this.makeLava = true;
 		this.clickIsFinished = false;
 		this.affectedBlocks = new ArrayList<TempBlock>();
-		this.tasks = new ArrayList<BukkitRunnable>();
+		this.tasks = new ArrayList<BukkitRunnable>(); //TODO: Migrate scheduler
 		this.revertMaterial = Material.getMaterial(getConfig().getString("Abilities.Earth.LavaFlow.RevertMaterial"));
 
 		this.shiftCooldown = getConfig().getLong("Abilities.Earth.LavaFlow.ShiftCooldown");
@@ -471,7 +471,7 @@ public class LavaFlow extends LavaAbility {
 	 * automatically clean up over time.
 	 */
 	public void removeOnDelay() {
-		final BukkitRunnable br = new BukkitRunnable() {
+		final BukkitRunnable br = new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				LavaFlow.this.removeSlowly();
@@ -494,7 +494,7 @@ public class LavaFlow extends LavaAbility {
 			final TempBlock tblock = this.affectedBlocks.get(i);
 			final boolean isTempAir = TEMP_AIR_BLOCKS.values().contains(tblock);
 
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 
 				@Override
 				public void run() {
@@ -520,7 +520,7 @@ public class LavaFlow extends LavaAbility {
 			}.runTaskLater(ProjectKorra.plugin, (long) (i / this.shiftRemoveSpeed));
 		}
 
-		for (final BukkitRunnable task : this.tasks) {
+		for (final BukkitRunnable task : this.tasks) { //TODO: Migrate scheduler
 			task.cancel();
 		}
 	}
@@ -545,7 +545,7 @@ public class LavaFlow extends LavaAbility {
 			}
 		}
 
-		for (final BukkitRunnable task : this.tasks) {
+		for (final BukkitRunnable task : this.tasks) { //TODO: Migrate scheduler
 			task.cancel();
 		}
 	}
@@ -934,7 +934,7 @@ public class LavaFlow extends LavaAbility {
 		return this.affectedBlocks;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 

@@ -176,7 +176,7 @@ public class FlightMultiAbility extends FlightAbility implements MultiAbility {
 			} else {
 				if (requestTime.get(this.player.getUniqueId()) + 15000 > System.currentTimeMillis()) {
 					final long start = System.currentTimeMillis();
-					new BukkitRunnable() {
+					new BukkitRunnable() { //TODO: Migrate scheduler
 						@Override
 						public void run() {
 							ChatUtil.sendActionBar(ChatColor.WHITE + FlightMultiAbility.this.player.getName() + ChatColor.GREEN + " has requested to carry you, right-click them to accept!", p2);
@@ -350,7 +350,7 @@ public class FlightMultiAbility extends FlightAbility implements MultiAbility {
 		}
 
 		final long start = System.currentTimeMillis();
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				ChatUtil.sendActionBar(ChatColor.AQUA + "Flight speed: " + FlightMultiAbility.this.speed(), FlightMultiAbility.this.player);
@@ -364,7 +364,7 @@ public class FlightMultiAbility extends FlightAbility implements MultiAbility {
 	public void cancel(final String reason) {
 		if (!MovementHandler.isStopped(this.player) && !this.bPlayer.isChiBlocked()) {
 			final long start = System.currentTimeMillis();
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 				@Override
 				public void run() {
 					ChatUtil.sendActionBar(ChatColor.RED + "* Flight cancelled due to " + reason + " *", FlightMultiAbility.this.player);

@@ -128,7 +128,7 @@ public class LightManager {
             ScheduledFuture<?> future;
         }
         TaskHolder taskHolder = new TaskHolder();
-
+        //TODO: Migrate scheduler
         Runnable task = new Runnable() {
             private int currentBrightness = brightness;
 

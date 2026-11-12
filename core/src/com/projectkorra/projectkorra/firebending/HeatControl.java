@@ -350,7 +350,7 @@ public class HeatControl extends FireAbility {
 				final TempBlock tb = new TempBlock(block, Material.WATER);
 				MELTED_BLOCKS.put(block, tb);
 
-				new BukkitRunnable() {
+				new BukkitRunnable() {//TODO: Migrate scheduler
 					@Override
 					public void run() {
 						final TempBlock melted = MELTED_BLOCKS.get(block);
@@ -395,7 +395,7 @@ public class HeatControl extends FireAbility {
 		}
 
 		if (LavaFlow.isLavaFlowBlock(tempBlock.getBlock())) {
-			new BukkitRunnable() {
+			new BukkitRunnable() {//TODO: Migrate scheduler
 				@Override
 				public void run() {
 					if (tempBlock != null) {
@@ -412,7 +412,7 @@ public class HeatControl extends FireAbility {
 			return;
 		}
 
-		new BukkitRunnable() {
+		new BukkitRunnable() {//TODO: Migrate scheduler
 			@Override
 			public void run() {
 				if (tempBlock != null) {

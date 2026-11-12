@@ -173,7 +173,7 @@ public class AirBurst extends AirAbility {
 			if (i % 4 != 0) {
 				toggleTime = (int) (i % (100 / this.particlePercentage)) + 3;
 			}
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 				@Override
 				public void run() {
 					blast.setShowParticles(true);

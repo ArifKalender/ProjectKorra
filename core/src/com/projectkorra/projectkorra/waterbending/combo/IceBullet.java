@@ -68,7 +68,7 @@ public class IceBullet extends IceAbility implements ComboAbility {
 	private Location location;
 	private Vector direction;
 	private WaterSourceGrabber waterGrabber;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
 
 	public IceBullet(final Player player) {
@@ -116,11 +116,11 @@ public class IceBullet extends IceAbility implements ComboAbility {
 	@Override
 	public void handleCollision(final Collision collision) {
 		if (collision.isRemovingFirst()) {
-			final ArrayList<BukkitRunnable> newTasks = new ArrayList<>();
+			final ArrayList<BukkitRunnable> newTasks = new ArrayList<>(); //TODO: Migrate scheduler
 			final double collisionDistanceSquared = Math.pow(this.getCollisionRadius() + collision.getAbilitySecond().getCollisionRadius(), 2);
 			// Remove all of the streams that are by this specific ourLocation.
 			// Don't just do a single stream at a time or this algorithm becomes O(n^2) with Collision's detection algorithm.
-			for (final BukkitRunnable task : this.getTasks()) {
+			for (final BukkitRunnable task : this.getTasks()) {//TODO: Migrate scheduler
 				if (task instanceof FireComboStream) {
 					final FireComboStream stream = (FireComboStream) task;
 					if (stream.getLocation().distanceSquared(collision.getLocationSecond()) > collisionDistanceSquared) {
@@ -139,7 +139,7 @@ public class IceBullet extends IceAbility implements ComboAbility {
 	@Override
 	public List<Location> getLocations() {
 		final ArrayList<Location> locations = new ArrayList<>();
-		for (final BukkitRunnable task : this.getTasks()) {
+		for (final BukkitRunnable task : this.getTasks()) {//TODO: Migrate scheduler
 			if (task instanceof FireComboStream) {
 				final FireComboStream stream = (FireComboStream) task;
 				locations.add(stream.getLocation());
@@ -347,7 +347,7 @@ public class IceBullet extends IceAbility implements ComboAbility {
 	@Override
 	public void remove() {
 		super.remove();
-		for (final BukkitRunnable task : this.tasks) {
+		for (final BukkitRunnable task : this.tasks) { //TODO: Migrate scheduler
 			task.cancel();
 		}
 		this.revertBlocks();
@@ -488,11 +488,11 @@ public class IceBullet extends IceAbility implements ComboAbility {
 		this.waterGrabber = waterGrabber;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 
-	public void setTasks(final ArrayList<BukkitRunnable> tasks) {
+	public void setTasks(final ArrayList<BukkitRunnable> tasks) { //TODO: Migrate scheduler
 		this.tasks = tasks;
 	}
 

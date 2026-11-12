@@ -3,6 +3,7 @@ package com.projectkorra.projectkorra.airbending.util;
 import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.airbending.AirBlast;
 
+//TODO: Migrate scheduler
 public class AirbendingManager implements Runnable {
 
 	public ProjectKorra plugin;

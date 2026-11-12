@@ -97,7 +97,7 @@ public abstract class Database {
 	 */
 	public void modifyQuery(final String query, final boolean async) {
 		if (async) {
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 				@Override
 				public void run() {
 					Database.this.doQuery(query);

@@ -161,7 +161,7 @@ public class FlightHandler extends Manager {
 	}
 
 	public void startCleanup() {
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				final long currentTime = System.currentTimeMillis();

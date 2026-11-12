@@ -2,6 +2,7 @@ package com.projectkorra.projectkorra.firebending.util;
 
 import com.projectkorra.projectkorra.ProjectKorra;
 
+//TODO: Migrate scheduler
 public class FirebendingManager implements Runnable {
 
 	public ProjectKorra plugin;

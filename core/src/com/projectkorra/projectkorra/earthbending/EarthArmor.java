@@ -301,7 +301,7 @@ public class EarthArmor extends EarthAbility {
 
 	public void updateAbsorbtion() {
 		final EarthArmor abil = this;
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				abil.goldHearts = EarthArmor.this.player.getAbsorptionAmount();

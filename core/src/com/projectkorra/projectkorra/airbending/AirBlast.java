@@ -444,7 +444,7 @@ public class AirBlast extends AirAbility {
 					testblock.setBlockData(button);
 					this.affectedLevers.add(testblock);
 
-					new BukkitRunnable() {
+					new BukkitRunnable() { //TODO: Migrate scheduler
 
 						@Override
 						public void run() {

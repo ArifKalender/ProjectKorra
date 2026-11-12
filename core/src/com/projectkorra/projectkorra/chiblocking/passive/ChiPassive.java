@@ -61,7 +61,7 @@ public class ChiPassive {
 		player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_HURT, 2, 0);
 
 		final long start = System.currentTimeMillis();
-		new BukkitRunnable() {
+		new BukkitRunnable() { //TODO: Migrate scheduler
 			@Override
 			public void run() {
 				ChatUtil.sendActionBar(Element.CHI.getColor() + "* Chiblocked *", player);

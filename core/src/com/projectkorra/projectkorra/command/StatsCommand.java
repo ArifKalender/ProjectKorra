@@ -95,7 +95,7 @@ public class StatsCommand extends PKCommand {
 			} catch (IndexOutOfBoundsException | NumberFormatException e) {}
 			final Object o = object;
 			final int p = page;
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 				@Override
 				public void run() {
 					final List<String> messages = StatsCommand.this.getLeaderboard(sender, o, statistic, p);

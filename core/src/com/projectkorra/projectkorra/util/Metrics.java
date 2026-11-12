@@ -188,6 +188,7 @@ public class Metrics {
 
 		private final Consumer<JsonObjectBuilder> appendServiceDataConsumer;
 
+		//TODO: Migrate scheduler
 		private final Consumer<Runnable> submitTaskConsumer;
 
 		private final Supplier<Boolean> checkServiceEnabledSupplier;
@@ -228,14 +229,14 @@ public class Metrics {
 		 * @param logResponseStatusText Whether or not the response status text should be logged.
 		 * @param skipRelocateCheck Whether or not the relocate check should be skipped.
 		 */
-		public MetricsBase(
+		public MetricsBase( //TODO: Migrate scheduler
 				String platform,
 				String serverUuid,
 				int serviceId,
 				boolean enabled,
 				Consumer<JsonObjectBuilder> appendPlatformDataConsumer,
 				Consumer<JsonObjectBuilder> appendServiceDataConsumer,
-				Consumer<Runnable> submitTaskConsumer,
+				Consumer<Runnable> submitTaskConsumer, //TODO: Migrate scheduler
 				Supplier<Boolean> checkServiceEnabledSupplier,
 				BiConsumer<String, Throwable> errorLogger,
 				Consumer<String> infoLogger,
@@ -289,7 +290,7 @@ public class Metrics {
 		}
 
 		private void startSubmitting() {
-			final Runnable submitTask =
+			final Runnable submitTask = //TODO: Migrate scheduler
 					() -> {
 						if (!enabled || !checkServiceEnabledSupplier.get()) {
 							// Submitting data or service is disabled

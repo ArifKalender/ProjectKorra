@@ -45,7 +45,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * they can use this ability instead.
  */
 @Deprecated
-public class FireComboStream extends BukkitRunnable {
+public class FireComboStream extends BukkitRunnable { //TODO: Migrate scheduler
 	private boolean useNewParticles;
 	private boolean cancelled;
 	private boolean collides;

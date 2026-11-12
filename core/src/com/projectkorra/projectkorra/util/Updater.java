@@ -83,7 +83,7 @@ public class Updater {
 		this.pluginName = plugin.getDescription().getName();
 	}
 
-	private void runAsync(final Plugin plugin, final Runnable run) {
+	private void runAsync(final Plugin plugin, final Runnable run) { //TODO: Migrate scheduler
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, run);
 	}
 

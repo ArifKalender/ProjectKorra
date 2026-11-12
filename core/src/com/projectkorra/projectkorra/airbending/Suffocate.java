@@ -59,7 +59,7 @@ public class Suffocate extends AirAbility {
 	private double blindRepeat;
 	private double animationSpeed;
 	private Suffocate ability;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 	private ArrayList<LivingEntity> targets;
 
 	public Suffocate(final Player player) {
@@ -185,19 +185,19 @@ public class Suffocate extends AirAbility {
 		} else if (!this.started) {
 			this.started = true;
 			for (final LivingEntity target : this.targets) {
-				final BukkitRunnable br1 = new BukkitRunnable() {
+				final BukkitRunnable br1 = new BukkitRunnable() { //TODO: Migrate scheduler
 					@Override
 					public void run() {
 						DamageHandler.damageEntity(target, Suffocate.this.damage, Suffocate.this.ability);
 					}
 				};
-				final BukkitRunnable br2 = new BukkitRunnable() {
+				final BukkitRunnable br2 = new BukkitRunnable() { //TODO: Migrate scheduler
 					@Override
 					public void run() {
 						target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, (int) (Suffocate.this.slowRepeat * 20), (int) Suffocate.this.slow));
 					}
 				};
-				final BukkitRunnable br3 = new BukkitRunnable() {
+				final BukkitRunnable br3 = new BukkitRunnable() {//TODO: Migrate scheduler
 					@Override
 					public void run() {
 						target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, (int) (Suffocate.this.blindRepeat * 20), (int) Suffocate.this.blind));
@@ -341,7 +341,7 @@ public class Suffocate extends AirAbility {
 	 * entity. The direction of the spiral is determined by SpiralType, and each
 	 * type is calculated independently from one another.
 	 */
-	public class SuffocateSpiral extends BukkitRunnable {
+	public class SuffocateSpiral extends BukkitRunnable { //TODO: Migrate scheduler
 		private Location startLoc;
 		private final Location loc;
 		private LivingEntity target;
@@ -628,7 +628,7 @@ public class Suffocate extends AirAbility {
 		this.animationSpeed = animationSpeed;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 

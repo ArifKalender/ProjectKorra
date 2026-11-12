@@ -21,6 +21,7 @@ import com.projectkorra.projectkorra.util.RevertChecker;
 import com.projectkorra.projectkorra.util.TempArmor;
 import com.projectkorra.projectkorra.util.TempPotionEffect;
 
+//TODO: Migrate scheduler
 public class BendingManager implements Runnable {
 
 	private static BendingManager instance;
@@ -140,6 +141,7 @@ public class BendingManager implements Runnable {
 	 * This runnable runs every 20 ticks (1 second).
 	 */
 	public static class TempElementsRunnable implements Runnable {
+		//TODO: Migrate scheduler
 		@Override
 		public void run() {
 			//Manage Temp elements

@@ -103,7 +103,7 @@ public class FireBurst extends FireAbility {
 		for (int i = 0; i < this.blasts.size(); i++) {
 			final FireBlast fblast = this.blasts.get(i);
 			final int toggleTime = (int) (i % (100.0 / this.particlesPercentage));
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 				@Override
 				public void run() {
 					fblast.setShowParticles(true);

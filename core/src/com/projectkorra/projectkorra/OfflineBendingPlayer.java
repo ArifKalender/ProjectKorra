@@ -155,6 +155,7 @@ public class OfflineBendingPlayer {
 
         LOADING.put(uuid, future); //Put the future in the loading map
 
+        //TODO: Migrate scheduler
         Runnable loadTask = () -> {
             OfflineBendingPlayer bPlayer = new OfflineBendingPlayer(offlinePlayer);
             if (offlinePlayer.isOnline()) {
@@ -257,7 +258,7 @@ public class OfflineBendingPlayer {
                             };
 
                             if (onStartup) { //If we are doing this on startup, addon elements aren't loaded yet. So do this async
-                                new BukkitRunnable() {
+                                new BukkitRunnable() { //TODO: Migrate scheduler
                                     @Override
                                     public void run() {
                                         if (func.test(addonClone)) {
@@ -361,7 +362,7 @@ public class OfflineBendingPlayer {
                                 }
                             };
                             if (onStartup) { //If we are doing this on startup, addon elements aren't loaded yet. So do this async
-                                new BukkitRunnable() {
+                                new BukkitRunnable() { //TODO: Migrate scheduler
                                     @Override
                                     public void run() {
                                         if (func.test(addonClone)) {
@@ -405,7 +406,7 @@ public class OfflineBendingPlayer {
                         }
                     };
                     if (onStartup) { //If we are doing this on startup, addon elements aren't loaded yet. So do this async
-                        new BukkitRunnable() {
+                        new BukkitRunnable() { //TODO: Migrate scheduler
                             @Override
                             public void run() {
                                 if (func.test(abilitiesClone)) {

@@ -7,6 +7,7 @@ import com.projectkorra.projectkorra.earthbending.Shockwave;
 import com.projectkorra.projectkorra.earthbending.Tremorsense;
 import com.projectkorra.projectkorra.util.RevertChecker;
 
+//TODO: Migrate scheduler
 public class EarthbendingManager implements Runnable {
 	public ProjectKorra plugin;
 

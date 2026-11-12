@@ -103,7 +103,7 @@ public class Lightning extends LightningAbility {
 	private Arc currentCopperChainArc;
 	private ArrayList<Entity> affectedEntities;
 	private ArrayList<Arc> arcs;
-	private ArrayList<BukkitRunnable> tasks;
+	private ArrayList<BukkitRunnable> tasks; //TODO: Migrate scheduler
 	private ArrayList<Location> locations;
 	private Block[] chargedCopperBlocks;
 	private static final Set<EntityType> LIGHTNING_AFFECTED = Sets.newHashSet(EntityType.CREEPER, EntityType.VILLAGER,
@@ -520,7 +520,7 @@ public class Lightning extends LightningAbility {
 					}
 					
 					while (iterLoc.distanceSquared(dest) > 0.15 * 0.15) {
-						final BukkitRunnable task = new LightningParticle(arc, iterLoc.clone(), this.selfHitWater, this.waterArcs);
+						final BukkitRunnable task = new LightningParticle(arc, iterLoc.clone(), this.selfHitWater, this.waterArcs); //TODO: Migrate scheduler
 						final double timer = this.state == State.CHAIN ? arc.getAnimationLocations().get(j).getAnimCounter() / 8 : arc.getAnimationLocations().get(j).getAnimCounter() / 2;
 						task.runTaskTimer(ProjectKorra.plugin, (long) timer, 1);
 						this.tasks.add(task);
@@ -751,7 +751,7 @@ public class Lightning extends LightningAbility {
 	 * handle damaging any entities. These Runnables also check to see if they
 	 * reach water, in which case they will generate subarcs to branch out.
 	 **/
-	public class LightningParticle extends BukkitRunnable {
+	public class LightningParticle extends BukkitRunnable { //TODO: Migrate scheduler
 		private boolean selfHitWater;
 		private int count = 0;
 		private int waterArcs;
@@ -770,7 +770,7 @@ public class Lightning extends LightningAbility {
 		@Override
 		public void cancel() {
 			super.cancel();
-			Lightning.this.tasks.remove(this);
+			Lightning.this.tasks.remove(this); //TODO: Migrate scheduler
 		}
 
 		/**
@@ -1189,7 +1189,7 @@ public class Lightning extends LightningAbility {
 		return this.arcs;
 	}
 
-	public ArrayList<BukkitRunnable> getTasks() {
+	public ArrayList<BukkitRunnable> getTasks() { //TODO: Migrate scheduler
 		return this.tasks;
 	}
 

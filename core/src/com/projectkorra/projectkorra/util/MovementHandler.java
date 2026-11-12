@@ -24,7 +24,7 @@ public class MovementHandler {
 	public static Set<MovementHandler> handlers = new HashSet<>();
 
 	private final LivingEntity entity;
-	private BukkitRunnable runnable, msg;
+	private BukkitRunnable runnable, msg; //TODO: Migrate scheduler
 	private ResetTask reset = null;
 	private final CoreAbility ability;
 
@@ -49,6 +49,7 @@ public class MovementHandler {
 		if (this.entity instanceof Player) {
 			final long start = System.currentTimeMillis();
 			final Player player = (Player) this.entity;
+			//TODO: Migrate scheduler
 			this.runnable = new BukkitRunnable() {
 
 				@Override
@@ -62,7 +63,7 @@ public class MovementHandler {
 			};
 			this.runnable.runTaskTimer(ProjectKorra.plugin, 0, 1);
 		} else {
-			this.runnable = new BukkitRunnable() {
+			this.runnable = new BukkitRunnable() { //TODO: Migrate scheduler
 
 				@Override
 				public void run() {
@@ -70,14 +71,14 @@ public class MovementHandler {
 				}
 
 			};
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 
 				@Override
 				public void run() {
 					if (MovementHandler.this.entity.isOnGround()) {
 						MovementHandler.this.entity.setAI(false);
 						this.cancel();
-						MovementHandler.this.runnable.runTaskLater(ProjectKorra.plugin, duration);
+						MovementHandler.this.runnable.runTaskLater(ProjectKorra.plugin, duration); //TODO: Migrate scheduler
 					}
 				}
 
@@ -96,7 +97,7 @@ public class MovementHandler {
 		this.entity.setMetadata("movement:stop", new FixedMetadataValue(ProjectKorra.plugin, this.ability));
 		if (this.entity instanceof Player) {
 			final Player player = (Player) this.entity;
-			this.msg = new BukkitRunnable() {
+			this.msg = new BukkitRunnable() { //TODO: Migrate scheduler
 
 				@Override
 				public void run() {
@@ -106,7 +107,7 @@ public class MovementHandler {
 			};
 			this.msg.runTaskTimer(ProjectKorra.plugin, 0, 1);
 		} else {
-			new BukkitRunnable() {
+			new BukkitRunnable() { //TODO: Migrate scheduler
 
 				@Override
 				public void run() {
@@ -118,14 +119,14 @@ public class MovementHandler {
 
 			}.runTaskTimer(ProjectKorra.plugin, 0, 1);
 		}
-		this.runnable = null;
+		this.runnable = null; //TODO: Migrate scheduler
 	}
 
 	/**
 	 * Resets any stopped movements and runs the {@link ResetTask} if able.
 	 */
 	public void reset() {
-		if (this.runnable != null) {
+		if (this.runnable != null) { //TODO: Migrate scheduler
 			try {
 				this.runnable.cancel();
 			} catch (final IllegalStateException e) { //if a player hasn't landed on the ground yet this runnable wont be scheduled, and will give an error on server shutdown

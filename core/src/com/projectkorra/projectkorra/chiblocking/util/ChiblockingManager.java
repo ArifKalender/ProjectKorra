@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.chiblocking.Smokescreen;
 
+//TODO: Migrate scheduler
 public class ChiblockingManager implements Runnable {
 	public ProjectKorra plugin;
 

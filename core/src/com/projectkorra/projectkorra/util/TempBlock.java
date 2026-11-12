@@ -53,7 +53,7 @@ public class TempBlock {
 	private long revertTime;
 	private boolean inRevertQueue;
 	private boolean reverted;
-	private Runnable revertTask = null;
+	private Runnable revertTask = null; //TODO: Migrate scheduler
 	private Optional<CoreAbility> ability = Optional.empty(); // If we want this TempBlock to have an assigned ability created from it
 	private boolean isBendableSource = false;
 	private boolean suffocate = true;
@@ -275,11 +275,11 @@ public class TempBlock {
 		return this.ability;
 	}
 
-	public Runnable getRevertTask() {
+	public Runnable getRevertTask() { //TODO: Migrate scheduler
 		return this.revertTask;
 	}
 
-	public void setRevertTask(final Runnable task) {
+	public void setRevertTask(final Runnable task) { //TODO: Migrate scheduler
 		this.revertTask = task;
 	}
 
@@ -464,7 +464,7 @@ public class TempBlock {
 	/**
 	 * Will be removed in future. Exactly the same as a Runnable so no point having a unique class for it
 	 */
-	public interface RevertTask extends Runnable { }
+	public interface RevertTask extends Runnable { } //TODO: Migrate scheduler
 
 	/**
 	 * Whether the physics should be updated or not. Fire should be updated so it can burn and spread IF
@@ -504,6 +504,7 @@ public class TempBlock {
 				'}';
 	}
 
+	//TODO: Migrate scheduler
 	public static class TempBlockRevertTask implements Runnable {
 		@Override
 		public void run() {

@@ -5,6 +5,7 @@ import com.projectkorra.projectkorra.waterbending.Torrent;
 import com.projectkorra.projectkorra.waterbending.WaterSpoutWave;
 import com.projectkorra.projectkorra.waterbending.multiabilities.WaterArms;
 
+//TODO: Migrate scheduler
 public class WaterbendingManager implements Runnable {
 
 	public ProjectKorra plugin;
