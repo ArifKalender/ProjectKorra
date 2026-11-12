@@ -1,8 +1,10 @@
 package com.projectkorra.projectkorra;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +72,7 @@ public class SchedulerUtil {
         boolean isAsync;
         long delay;
         long interval;
+        Object task;
 
         PKTask(Runnable runnable, Entity entity, Location location, boolean isAsync, long delay, long interval) {
             this.runnable=runnable;
@@ -112,47 +115,52 @@ public class SchedulerUtil {
 
         public PKTask run() {
             if (!IS_FOLIA) {
-                if (isAsync) Bukkit.getScheduler().runTaskAsynchronously(ProjectKorra.plugin, runnable);
-                else Bukkit.getScheduler().runTask(ProjectKorra.plugin, runnable);
+                if (isAsync) task = Bukkit.getScheduler().runTaskAsynchronously(ProjectKorra.plugin, runnable);
+                else task = Bukkit.getScheduler().runTask(ProjectKorra.plugin, runnable);
             }
-            else if (entity != null) entity.getScheduler().run(ProjectKorra.plugin, t -> runnable.run(), null);
-            else if (location != null) Bukkit.getRegionScheduler().run(ProjectKorra.plugin, location, t -> runnable.run());
-            else if (isAsync) Bukkit.getAsyncScheduler().runNow(ProjectKorra.plugin, t -> runnable.run());
-            else Bukkit.getGlobalRegionScheduler().run(ProjectKorra.plugin, t -> runnable.run());
+            else if (entity != null) task = entity.getScheduler().run(ProjectKorra.plugin, t -> runnable.run(), null);
+            else if (location != null) task = Bukkit.getRegionScheduler().run(ProjectKorra.plugin, location, t -> runnable.run());
+            else if (isAsync) task = Bukkit.getAsyncScheduler().runNow(ProjectKorra.plugin, t -> runnable.run());
+            else task = Bukkit.getGlobalRegionScheduler().run(ProjectKorra.plugin, t -> runnable.run());
             return this;
         }
         public PKTask runDelayed() {
             if (!IS_FOLIA) {
-                if (isAsync) Bukkit.getScheduler().runTaskLaterAsynchronously(ProjectKorra.plugin, runnable, delay);
-                else Bukkit.getScheduler().runTaskLater(ProjectKorra.plugin, runnable, delay);
+                if (isAsync) task = Bukkit.getScheduler().runTaskLaterAsynchronously(ProjectKorra.plugin, runnable, delay);
+                else task = Bukkit.getScheduler().runTaskLater(ProjectKorra.plugin, runnable, delay);
             }
-            else if (entity != null) entity.getScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), null, delay);
-            else if (location != null) Bukkit.getRegionScheduler().runDelayed(ProjectKorra.plugin, location, t -> runnable.run(), delay);
+            else if (entity != null) task = entity.getScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), null, delay);
+            else if (location != null) task = Bukkit.getRegionScheduler().runDelayed(ProjectKorra.plugin, location, t -> runnable.run(), delay);
             else if (isAsync) {
                 long foliaDelay = delay * 50L;
                 // Different scheduling models require different time units
                 // due to how they are designed. This conversion feels hacky
                 // but whatever, TimeUnit (obviously) doesn't support TICKS :(
-                Bukkit.getAsyncScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), foliaDelay, TimeUnit.MILLISECONDS);
+                task = Bukkit.getAsyncScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), foliaDelay, TimeUnit.MILLISECONDS);
             }
-            else Bukkit.getGlobalRegionScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), delay);
+            else task = Bukkit.getGlobalRegionScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), delay);
             return this;
         }
 
         public PKTask runRepeating() {
             if (!IS_FOLIA) {
-                if (isAsync) Bukkit.getScheduler().runTaskTimerAsynchronously(ProjectKorra.plugin, runnable, delay, interval);
-                else Bukkit.getScheduler().runTaskTimer(ProjectKorra.plugin, runnable, delay, interval);
+                if (isAsync) task = Bukkit.getScheduler().runTaskTimerAsynchronously(ProjectKorra.plugin, runnable, delay, interval);
+                else task = Bukkit.getScheduler().runTaskTimer(ProjectKorra.plugin, runnable, delay, interval);
             }
-            else if (entity != null) entity.getScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), null, delay, interval);
-            else if (location != null) Bukkit.getRegionScheduler().runAtFixedRate(ProjectKorra.plugin, location, t -> runnable.run(), delay, interval);
+            else if (entity != null) task = entity.getScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), null, delay, interval);
+            else if (location != null) task = Bukkit.getRegionScheduler().runAtFixedRate(ProjectKorra.plugin, location, t -> runnable.run(), delay, interval);
             else if (isAsync) {
                 long foliaDelay = delay * 50L;
-                long foliaInterval = delay * 50L;
-                Bukkit.getAsyncScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), foliaDelay, foliaInterval, TimeUnit.MILLISECONDS);
+                long foliaInterval = interval * 50L;
+                task = Bukkit.getAsyncScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), foliaDelay, foliaInterval, TimeUnit.MILLISECONDS);
             }
-            else Bukkit.getGlobalRegionScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), delay, interval);
+            else task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), delay, interval);
             return this;
+        }
+        public void cancel() {
+            if (task == null) return;
+            if (IS_FOLIA) ((ScheduledTask) task).cancel();
+            else ((BukkitTask) task).cancel();
         }
     }
 }
