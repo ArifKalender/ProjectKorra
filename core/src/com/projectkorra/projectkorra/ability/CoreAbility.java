@@ -535,7 +535,7 @@ public abstract class CoreAbility implements Ability {
 	 *
 	 * @param clazz the clazz for the type of CoreAbility
 	 * @return a Set of players that have an active instance of clazz
-	 * @apiNote Handle safely when using regionalized server software
+	 * @apiNote Handle safely when using regionized server software
 	 */
 	public static Set<Player> getPlayers(final Class<? extends CoreAbility> clazz) {
 		final Set<Player> players = ConcurrentHashMap.newKeySet();
@@ -730,8 +730,8 @@ public abstract class CoreAbility implements Ability {
 	}
 
 	/**
-	 * @apiNote Returns 0 if using on regionalized server software due to a global tick not existing.
-	 * @return A variable that's globally incremented every tick, assuming that the server is not regionalized.
+	 * @apiNote Returns 0 if using on regionized server software due to a global tick not existing.
+	 * @return A variable that's globally incremented every tick, assuming that the server is not regionized.
 	 */
 	public static long getCurrentTick() {
 		if (SchedulerUtil.IS_FOLIA) return 0;
@@ -841,7 +841,7 @@ public abstract class CoreAbility implements Ability {
 			boolean isActiveAvatarState = bPlayer.isAvatarState() && this.getName().equals("AvatarState");
 			boolean isActiveIllumination = bPlayer.isIlluminating() && this.getName().equals("Illumination");
 			boolean isActiveTremorSense = bPlayer.isTremorSensing() && this.getName().equals("Tremorsense");
-			
+
 			if (isActiveStance || isActiveAvatarState || isActiveIllumination || isActiveTremorSense) {
 				displayedMessage = this.getElement().getColor() + "" + ChatColor.UNDERLINE + this.getName();
 			} else {
