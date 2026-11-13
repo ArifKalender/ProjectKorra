@@ -51,7 +51,7 @@ public class Updater {
 		this.plugin = plugin;
 		this.checkUpdate = checkForUpdate;
 		if (this.checkUpdate) {
-			this.runAsync(plugin, () -> {
+			this.runAsync(() -> {
 				try {
 					plugin.getLogger().info("Checking for updates...!");
 					this.url = new URL(URL);
@@ -83,8 +83,8 @@ public class Updater {
 		this.pluginName = plugin.getDescription().getName();
 	}
 
-	private void runAsync(final Plugin plugin, final Runnable run) { //TODO: Migrate scheduler
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, run);
+	private void runAsync(final Runnable run) {
+		ProjectKorra.getSchedulerUtil().runAsync(run);
 	}
 
 	/**

@@ -1,29 +1,22 @@
 package com.projectkorra.projectkorra.ability;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.jar.JarFile;
 
 import com.projectkorra.projectkorra.attribute.*;
 import com.projectkorra.projectkorra.command.CooldownCommand;
 import com.projectkorra.projectkorra.event.AbilityRecalculateAttributeEvent;
+import com.projectkorra.projectkorra.util.SchedulerUtil;
 import org.bukkit.permissions.Permission;
 
 import org.apache.commons.lang3.Validate;
@@ -81,11 +74,12 @@ public abstract class CoreAbility implements Ability {
 	private static final Map<String, CoreAbility> ABILITIES_BY_NAME = new ConcurrentSkipListMap<>(); // preserves ordering.
 	private static final Map<Class<? extends CoreAbility>, CoreAbility> ABILITIES_BY_CLASS = new ConcurrentHashMap<>();
 	private static final double DEFAULT_COLLISION_RADIUS = 0.3;
-	private static final List<String> ADDON_PLUGINS = new ArrayList<>();
+	private static final List<String> ADDON_PLUGINS = new CopyOnWriteArrayList<>();
 	private static final Map<Class<? extends CoreAbility>, Map<String, AttributeCache>> ATTRIBUTE_FIELDS = new HashMap<>();
 
-	private static int idCounter;
-	private static long currentTick;
+	private static AtomicInteger idCounter = new AtomicInteger();
+	private AtomicLong regionTick = new AtomicLong(0);
+	private static long currentTick = 0;
 
 	protected Player player;
 	protected BendingPlayer bPlayer;
@@ -151,7 +145,7 @@ public abstract class CoreAbility implements Ability {
 		this.flightHandler = Manager.getManager(FlightHandler.class);
 		this.startTime = System.currentTimeMillis();
 		this.started = false;
-		this.id = idCounter++;
+		this.id = idCounter.incrementAndGet();
 	}
 
 	/**
@@ -168,34 +162,36 @@ public abstract class CoreAbility implements Ability {
 		if (this.player == null || !this.isEnabled()) {
 			return;
 		}
-		final AbilityStartEvent event = new AbilityStartEvent(this);
-		Bukkit.getServer().getPluginManager().callEvent(event);
-		if (event.isCancelled()) {
-			this.remove();
-			return;
-		}
+		runAtSelf(() -> {
+			final AbilityStartEvent event = new AbilityStartEvent(this);
+			Bukkit.getServer().getPluginManager().callEvent(event);
+			if (event.isCancelled()) {
+				this.remove();
+				return;
+			}
 
-		this.started = true;
-		this.startTime = System.currentTimeMillis();
-		this.startTick = getCurrentTick();
-		final Class<? extends CoreAbility> clazz = this.getClass();
-		final UUID uuid = this.player.getUniqueId();
+			this.started = true;
+			this.startTime = System.currentTimeMillis();
+			this.startTick = SchedulerUtil.IS_FOLIA ? 0 : getCurrentTick();
+			final Class<? extends CoreAbility> clazz = this.getClass();
+			final UUID uuid = this.player.getUniqueId();
 
-		if (!INSTANCES_BY_PLAYER.containsKey(clazz)) {
-			INSTANCES_BY_PLAYER.put(clazz, new ConcurrentHashMap<UUID, Map<Integer, CoreAbility>>());
-		}
-		if (!INSTANCES_BY_PLAYER.get(clazz).containsKey(uuid)) {
-			INSTANCES_BY_PLAYER.get(clazz).put(uuid, new ConcurrentHashMap<Integer, CoreAbility>());
-		}
-		if (!INSTANCES_BY_CLASS.containsKey(clazz)) {
-			INSTANCES_BY_CLASS.put(clazz, Collections.newSetFromMap(new ConcurrentHashMap<CoreAbility, Boolean>()));
-		}
+			if (!INSTANCES_BY_PLAYER.containsKey(clazz)) {
+				INSTANCES_BY_PLAYER.put(clazz, new ConcurrentHashMap<UUID, Map<Integer, CoreAbility>>());
+			}
+			if (!INSTANCES_BY_PLAYER.get(clazz).containsKey(uuid)) {
+				INSTANCES_BY_PLAYER.get(clazz).put(uuid, new ConcurrentHashMap<Integer, CoreAbility>());
+			}
+			if (!INSTANCES_BY_CLASS.containsKey(clazz)) {
+				INSTANCES_BY_CLASS.put(clazz, Collections.newSetFromMap(new ConcurrentHashMap<CoreAbility, Boolean>()));
+			}
 
-		this.recalculateAttributes();
+			this.recalculateAttributes();
 
-		INSTANCES_BY_PLAYER.get(clazz).get(uuid).put(this.id, this);
-		INSTANCES_BY_CLASS.get(clazz).add(this);
-		INSTANCES.add(this);
+			INSTANCES_BY_PLAYER.get(clazz).get(uuid).put(this.id, this);
+			INSTANCES_BY_CLASS.get(clazz).add(this);
+			INSTANCES.add(this);
+		}, null);
 	}
 
 	/**
@@ -209,39 +205,54 @@ public abstract class CoreAbility implements Ability {
 	 */
 	@Override
 	public void remove() {
-		if (this.player == null) {
-			return;
-		}
-
-		Bukkit.getServer().getPluginManager().callEvent(new AbilityEndEvent(this));
-		this.removed = true;
-
 		final Map<UUID, Map<Integer, CoreAbility>> classMap = INSTANCES_BY_PLAYER.get(this.getClass());
-		if (classMap != null) {
-			final Map<Integer, CoreAbility> playerMap = classMap.get(this.player.getUniqueId());
-			if (playerMap != null) {
-				playerMap.remove(this.id);
-				if (playerMap.size() == 0) {
-					classMap.remove(this.player.getUniqueId());
+		final Map<Integer, CoreAbility> playerMap = classMap.get(this.player.getUniqueId());
+		this.runAtSelf(() -> {
+			if (this.player == null) {
+				return;
+			}
+
+			Bukkit.getServer().getPluginManager().callEvent(new AbilityEndEvent(this));
+			this.removed = true;
+
+			if (classMap != null) {
+				if (playerMap != null) {
+					playerMap.remove(this.id);
+					if (playerMap.size() == 0) {
+						classMap.remove(this.player.getUniqueId());
+					}
+				}
+
+				if (classMap.size() == 0) {
+					INSTANCES_BY_PLAYER.remove(this.getClass());
 				}
 			}
 
-			if (classMap.size() == 0) {
-				INSTANCES_BY_PLAYER.remove(this.getClass());
+			for (AttributeCache cache : ATTRIBUTE_FIELDS.get(this.getClass()).values()) {
+				cache.getInitialValues().remove(this);
+				cache.getCurrentModifications().remove(this);
 			}
-		}
 
-		for (AttributeCache cache : ATTRIBUTE_FIELDS.get(this.getClass()).values()) {
-			cache.getInitialValues().remove(this);
-			cache.getCurrentModifications().remove(this);
-		}
-
-		if (INSTANCES_BY_CLASS.containsKey(this.getClass())) {
-			INSTANCES_BY_CLASS.get(this.getClass()).remove(this);
-		}
+			if (INSTANCES_BY_CLASS.containsKey(this.getClass())) {
+				INSTANCES_BY_CLASS.get(this.getClass()).remove(this);
+			}
 
 
-		INSTANCES.remove(this);
+			INSTANCES.remove(this);
+		}, () -> {
+			Bukkit.getServer().getPluginManager().callEvent(new AbilityEndEvent(this));
+			this.removed = true;
+			playerMap.remove(this.id);
+			classMap.remove(this.player.getUniqueId());
+			INSTANCES_BY_PLAYER.remove(this.getClass());
+			for (AttributeCache cache : ATTRIBUTE_FIELDS.get(this.getClass()).values()) {
+				cache.getInitialValues().remove(this);
+				cache.getCurrentModifications().remove(this);
+			}
+			if (INSTANCES_BY_CLASS.containsKey(this.getClass())) {
+				INSTANCES_BY_CLASS.get(this.getClass()).remove(this);
+			}
+		});
 	}
 
 	/**
@@ -251,53 +262,66 @@ public abstract class CoreAbility implements Ability {
 	public static void progressAll() {
 		for (final Set<CoreAbility> setAbils : INSTANCES_BY_CLASS.values()) {
 			for (final CoreAbility abil : setAbils) {
-				if (abil instanceof PassiveAbility) {
-					if (!((PassiveAbility) abil).isProgressable()) {
-						continue;
-					}
-
-					if (!abil.getPlayer().isOnline()) { // This has to be before isDead as isDead.
-						abil.remove(); // will return true if they are offline.
-						continue;
+				AtomicBoolean canReturn = new AtomicBoolean(false);
+				abil.runAtSelf(() -> {
+					if (abil instanceof PassiveAbility) {
+						if (!((PassiveAbility) abil).isProgressable()) {
+							canReturn.set(true);
+						}
+						if (!abil.getPlayer().isOnline()) { // This has to be before isDead as isDead.
+							abil.remove();                  // will return true if they are offline.
+							canReturn.set(true);
+						} else if (abil.getPlayer().isDead()) {
+							canReturn.set(true);
+						}
 					} else if (abil.getPlayer().isDead()) {
-						continue;
+						abil.remove();
+						canReturn.set(true);
+					} else if (!abil.getPlayer().isOnline()) {
+						abil.remove();
+						canReturn.set(true);
 					}
-				} else if (abil.getPlayer().isDead()) {
-					abil.remove();
-					continue;
-				} else if (!abil.getPlayer().isOnline()) {
-					abil.remove();
-					continue;
-				}
+					if (canReturn.get()) return;
 
-				try {
+					try {
 					/*if (!abil.attributesModified) {
 						abil.modifyAttributes();
 						abil.attributesModified = true;
 					}*/
 
-					//try (MCTiming timing = ProjectKorra.timing(abil.getName()).startTiming()) {
-						abil.progress();
-					//}
+						//try (MCTiming timing = ProjectKorra.timing(abil.getName()).startTiming()) {
+						//}
 
-					Bukkit.getServer().getPluginManager().callEvent(new AbilityProgressEvent(abil));
-				} catch (final Exception e) {
-					e.printStackTrace();
-					Bukkit.getLogger().severe(abil.toString());
-					try {
-						abil.getPlayer().sendMessage(ChatColor.YELLOW + "[" + new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date()) + "] " + ChatColor.RED + "There was an error running " + abil.getName() + ". please notify the server owner describing exactly what you were doing at this moment");
-					} catch (final Exception me) {
-						Bukkit.getLogger().severe("unable to notify ability user of error");
+						abil.runAtSelf(() -> {
+							if (!ProjectKorra.getSchedulerUtil().ensureLocation(abil.getLocation())) {
+								abil.remove();
+								return;
+							}
+							abil.progress();
+							Bukkit.getServer().getPluginManager().callEvent(new AbilityProgressEvent(abil));
+							abil.getRegionTick().incrementAndGet();
+						}, abil::remove);
+
+					} catch (final Exception e) {
+						e.printStackTrace();
+						Bukkit.getLogger().severe(abil.toString());
+						try {
+							abil.runAtSelf(() -> {
+								abil.getPlayer().sendMessage(ChatColor.YELLOW + "[" + new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date()) + "] " + ChatColor.RED + "There was an error running " + abil.getName() + ". please notify the server owner describing exactly what you were doing at this moment");
+							}, null);
+						} catch (final Exception me) {
+							Bukkit.getLogger().severe("unable to notify ability user of error");
+						}
+						try {
+							abil.remove();
+						} catch (final Exception re) {
+							Bukkit.getLogger().severe("unable to fully remove ability of above error");
+						}
 					}
-					try {
-						abil.remove();
-					} catch (final Exception re) {
-						Bukkit.getLogger().severe("unable to fully remove ability of above error");
-					}
-				}
+				}, abil::remove);
 			}
 		}
-		currentTick++;
+		if (!SchedulerUtil.IS_FOLIA) currentTick++;
 	}
 
 	/**
@@ -496,12 +520,12 @@ public abstract class CoreAbility implements Ability {
 		}
 		final String name = ABILITIES_BY_CLASS.get(clazz).getName();
 		for (final CoreAbility abil : INSTANCES) {
-			if (abil.getName() == name) {
+			if (abil.getName().equals(name)) {
 				abil.remove();
 			}
 		}
 		ABILITIES_BY_CLASS.remove(clazz);
-		ABILITIES_BY_NAME.remove(name);
+		ABILITIES_BY_NAME.remove(name.toLowerCase(Locale.ROOT));
 		ProjectKorra.log.info("Unloaded ability: " + name);
 	}
 
@@ -511,17 +535,16 @@ public abstract class CoreAbility implements Ability {
 	 *
 	 * @param clazz the clazz for the type of CoreAbility
 	 * @return a Set of players that have an active instance of clazz
+	 * @apiNote Handle safely when using regionalized server software
 	 */
 	public static Set<Player> getPlayers(final Class<? extends CoreAbility> clazz) {
-		final HashSet<Player> players = new HashSet<>();
+		final Set<Player> players = ConcurrentHashMap.newKeySet();
 		if (clazz != null) {
 			final Map<UUID, Map<Integer, CoreAbility>> uuidMap = INSTANCES_BY_PLAYER.get(clazz);
 			if (uuidMap != null) {
 				for (final UUID uuid : uuidMap.keySet()) {
 					final Player uuidPlayer = Bukkit.getPlayer(uuid);
-					if (uuidPlayer != null) {
-						players.add(uuidPlayer);
-					}
+					if (uuidPlayer != null) players.add(uuidPlayer);
 				}
 			}
 		}
@@ -706,12 +729,18 @@ public abstract class CoreAbility implements Ability {
 		return this.startTick;
 	}
 
+	/**
+	 * @apiNote Returns 0 if using on regionalized server software due to a global tick not existing.
+	 * @return A variable that's globally incremented every tick, assuming that the server is not regionalized.
+	 */
 	public static long getCurrentTick() {
-		return currentTick;
+		if (SchedulerUtil.IS_FOLIA) return 0;
+		else return currentTick;
 	}
 
 	public long getRunningTicks() {
-		return currentTick - this.startTick;
+		if (!SchedulerUtil.IS_FOLIA) return currentTick - this.startTick;
+		return regionTick.get();
 	}
 
 	public boolean isStarted() {
@@ -838,52 +867,53 @@ public abstract class CoreAbility implements Ability {
 		if (target == this.player) {
 			return;
 		}
+		ProjectKorra.getSchedulerUtil().runEntity(() -> {
+			final Class<? extends CoreAbility> clazz = this.getClass();
 
-		final Class<? extends CoreAbility> clazz = this.getClass();
+			// The mapping from player UUID to a map of the player's instances.
+			Map<UUID, Map<Integer, CoreAbility>> classMap = INSTANCES_BY_PLAYER.get(clazz);
 
-		// The mapping from player UUID to a map of the player's instances.
-		Map<UUID, Map<Integer, CoreAbility>> classMap = INSTANCES_BY_PLAYER.get(clazz);
+			if (classMap != null) {
+				// The map of AbilityId to Ability for the current player.
+				final Map<Integer, CoreAbility> playerMap = classMap.get(this.player.getUniqueId());
 
-		if (classMap != null) {
-			// The map of AbilityId to Ability for the current player.
-			final Map<Integer, CoreAbility> playerMap = classMap.get(this.player.getUniqueId());
+				if (playerMap != null) {
+					// Remove the ability from the current player's map.
+					playerMap.remove(this.id);
 
-			if (playerMap != null) {
-				// Remove the ability from the current player's map.
-				playerMap.remove(this.id);
+					if (playerMap.isEmpty()) {
+						// Remove the player's empty ability map from global instances map.
+						classMap.remove(this.player.getUniqueId());
+					}
+				}
 
-				if (playerMap.isEmpty()) {
-					// Remove the player's empty ability map from global instances map.
-					classMap.remove(this.player.getUniqueId());
+				if (classMap.isEmpty()) {
+					INSTANCES_BY_PLAYER.remove(this.getClass());
 				}
 			}
 
-			if (classMap.isEmpty()) {
-				INSTANCES_BY_PLAYER.remove(this.getClass());
+			// Add a new map for the current ability if it doesn't exist in the global map.
+			if (!INSTANCES_BY_PLAYER.containsKey(clazz)) {
+				INSTANCES_BY_PLAYER.put(clazz, new ConcurrentHashMap<>());
 			}
-		}
 
-		// Add a new map for the current ability if it doesn't exist in the global map.
-		if (!INSTANCES_BY_PLAYER.containsKey(clazz)) {
-			INSTANCES_BY_PLAYER.put(clazz, new ConcurrentHashMap<>());
-		}
+			classMap = INSTANCES_BY_PLAYER.get(clazz);
 
-		classMap = INSTANCES_BY_PLAYER.get(clazz);
+			// Create an AbilityId to Ability map for the target player if it doesn't exist.
+			if (!classMap.containsKey(target.getUniqueId())) {
+				classMap.put(target.getUniqueId(), new ConcurrentHashMap<>());
+			}
 
-		// Create an AbilityId to Ability map for the target player if it doesn't exist.
-		if (!classMap.containsKey(target.getUniqueId())) {
-			classMap.put(target.getUniqueId(), new ConcurrentHashMap<>());
-		}
+			// Add the current instance to the target player's ability map.
+			classMap.get(target.getUniqueId()).put(this.getId(), this);
 
-		// Add the current instance to the target player's ability map.
-		classMap.get(target.getUniqueId()).put(this.getId(), this);
+			this.player = target;
 
-		this.player = target;
-
-		final BendingPlayer newBendingPlayer = BendingPlayer.getBendingPlayer(target);
-		if (newBendingPlayer != null) {
-			this.bPlayer = newBendingPlayer;
-		}
+			final BendingPlayer newBendingPlayer = BendingPlayer.getBendingPlayer(target);
+			if (newBendingPlayer != null) {
+				this.bPlayer = newBendingPlayer;
+			}
+		}, target);
 	}
 
 	/**
@@ -1130,5 +1160,13 @@ public abstract class CoreAbility implements Ability {
 	    public int hashCode() {
 	        return uuid.hashCode();
 	    }
+	}
+
+	public SchedulerUtil.PKTask runAtSelf(Runnable runnable, Runnable retired) {
+		return ProjectKorra.getSchedulerUtil().runEntity(runnable, getPlayer()).runRetired(retired);
+	}
+
+	public AtomicLong getRegionTick() {
+		return regionTick;
 	}
 }
