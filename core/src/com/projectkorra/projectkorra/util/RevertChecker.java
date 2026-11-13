@@ -15,7 +15,6 @@ import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
 
-//TODO: Migrate scheduler
 public class RevertChecker implements Runnable {
 
 	private final ProjectKorra plugin;

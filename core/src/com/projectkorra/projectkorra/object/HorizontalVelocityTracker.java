@@ -29,7 +29,7 @@ import com.projectkorra.projectkorra.event.HorizontalVelocityChangeEvent;
 public class HorizontalVelocityTracker {
 
 	public static Map<Entity, HorizontalVelocityTracker> instances = new ConcurrentHashMap<Entity, HorizontalVelocityTracker>();
-	public boolean hasBeenDamaged = false;
+	public volatile boolean hasBeenDamaged = false;
 	public boolean barrier = ConfigManager.defaultConfig.get().getBoolean("Properties.HorizontalCollisionPhysics.DamageOnBarrierBlock");
 	private long delay;
 	private long fireTime;
@@ -52,17 +52,19 @@ public class HorizontalVelocityTracker {
 			return;
 		}
 
+		ProjectKorra.getSchedulerUtil().runEntity(() -> {
+			this.entity = e;
+			this.instigator = instigator;
+			this.fireTime = System.currentTimeMillis();
+			this.delay = delay;
+			this.thisVelocity = e.getVelocity().clone();
+			this.launchLocation = e.getLocation().clone();
+			this.impactLocation = this.launchLocation.clone();
+			this.abil = ability;
+			this.update();
+			instances.put(this.entity, this);
+		}, e);
 		remove(e);
-		this.entity = e;
-		this.instigator = instigator;
-		this.fireTime = System.currentTimeMillis();
-		this.delay = delay;
-		this.thisVelocity = e.getVelocity().clone();
-		this.launchLocation = e.getLocation().clone();
-		this.impactLocation = this.launchLocation.clone();
-		this.abil = ability;
-		this.update();
-		instances.put(this.entity, this);
 	}
 
 	public void update() {
@@ -116,28 +118,31 @@ public class HorizontalVelocityTracker {
 	}
 
 	public static void updateAll() {
-		for (final Entity e : instances.keySet()) {
-			if (e != null && !e.isDead() && instances.get(e) != null) {
-				instances.get(e).update();
-			} else {
-				instances.remove(e);
-			}
+		for (Map.Entry<Entity, HorizontalVelocityTracker> entry : instances.entrySet()) {
+			final Entity entity = entry.getKey();
+			final HorizontalVelocityTracker tracker = entry.getValue();
+
+			ProjectKorra.getSchedulerUtil().runEntity(() -> {
+				if (entity.isDead() || !ProjectKorra.getSchedulerUtil().ensureLocation(entity.getLocation())) {
+					remove(entity);
+					return;
+				}
+				if (instances.get(entity) == tracker) tracker.update();
+			}, entity).runRetired(() -> remove(entity));
 		}
 	}
 
 	public void remove() {
-		instances.remove(this.entity);
+		if (this.entity != null) instances.remove(this.entity, this);
 	}
 
 	public static void remove(final Entity e) {
-		instances.remove(e);
+		if (e != null) instances.remove(e);
 	}
 
 	public static boolean hasBeenDamagedByHorizontalVelocity(final Entity e) {
-		if (instances.containsKey(e)) {
-			return instances.get(e).hasBeenDamaged;
-		}
-		return false;
+		HorizontalVelocityTracker tracker = instances.get(e);
+		return tracker != null && tracker.hasBeenDamaged;
 	}
 
 	@Override

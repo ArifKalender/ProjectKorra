@@ -140,11 +140,11 @@ public class BendingManager implements Runnable {
 		this.time = System.currentTimeMillis();
 		ProjectKorra.time_step = this.interval;
 
-		CoreAbility.progressAll();
-		TempPotionEffect.progressAll();
-		this.handleDayNight();
-		RevertChecker.revertAirBlocks();
-		HorizontalVelocityTracker.updateAll();
+		CoreAbility.progressAll(); // Done
+		TempPotionEffect.progressAll(); // Done
+		this.handleDayNight(); // Done
+		RevertChecker.revertAirBlocks(); // Done
+		HorizontalVelocityTracker.updateAll(); // Done
 		this.handleCooldowns();
 		TempArmor.cleanup();
 
