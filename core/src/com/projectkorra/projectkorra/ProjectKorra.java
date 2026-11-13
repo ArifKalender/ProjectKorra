@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.logging.Logger;
 
-import com.djrapitops.plan.extension.ExtensionService;
 import com.projectkorra.projectkorra.hooks.PlanExtension;
 import com.projectkorra.projectkorra.region.RegionProtection;
+import com.projectkorra.projectkorra.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -29,10 +29,6 @@ import com.projectkorra.projectkorra.hooks.PlaceholderAPIHook;
 import com.projectkorra.projectkorra.hooks.WorldGuardFlag;
 import com.projectkorra.projectkorra.object.Preset;
 import com.projectkorra.projectkorra.storage.DBConnection;
-import com.projectkorra.projectkorra.util.Metrics;
-import com.projectkorra.projectkorra.util.RevertChecker;
-import com.projectkorra.projectkorra.util.StatisticsManager;
-import com.projectkorra.projectkorra.util.Updater;
 import com.projectkorra.projectkorra.waterbending.util.WaterbendingManager;
 
 public class ProjectKorra extends JavaPlugin {
@@ -45,6 +41,7 @@ public class ProjectKorra extends JavaPlugin {
 	public Updater updater;
 	BukkitTask revertChecker;
 	private static PlaceholderAPIHook papiHook;
+	private static SchedulerUtil schedulerUtil;
 
 	@Override
 	public void onEnable() {
@@ -52,6 +49,7 @@ public class ProjectKorra extends JavaPlugin {
 		ProjectKorra.log = this.getLogger();
 
 
+		schedulerUtil = new SchedulerUtil();
 		new ConfigManager();
 		final boolean checkUpdateOnStartup = ConfigManager.getConfig().getBoolean("Properties.UpdateChecker");
 		this.updater = new Updater(this, "https://projectkorra.com/forum/resources/projectkorra-core.1/", checkUpdateOnStartup);
@@ -177,5 +175,9 @@ public class ProjectKorra extends JavaPlugin {
 
 	public static boolean isDatabaseCooldownsEnabled() {
 		return ConfigManager.getConfig().getBoolean("Properties.DatabaseCooldowns");
+	}
+
+	public static SchedulerUtil getSchedulerUtil() {
+		return schedulerUtil;
 	}
 }

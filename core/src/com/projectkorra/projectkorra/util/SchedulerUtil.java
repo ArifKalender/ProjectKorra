@@ -23,6 +23,11 @@ public class SchedulerUtil {
         IS_FOLIA = isFolia;
     }
 
+    public boolean ensureLocation(Location location) {
+        if (!IS_FOLIA) return true;
+        else return Bukkit.isOwnedByCurrentRegion(location);
+    }
+
     public PKTask runEntity(Runnable runnable, Entity entity) {
         return new PKTask(runnable, entity).run();
     }
@@ -66,14 +71,18 @@ public class SchedulerUtil {
 
 
 
-    private class PKTask {
+    public static class PKTask {
         Runnable runnable;
         Entity entity;
         Location location;
         boolean isAsync;
         long delay;
         long interval;
+        // BukkitTask or ScheduledTask (Folia), depending on IS_FOLIA. They share no common type.
+        // Stays null if nothing was scheduled (Folia returns null for a removed entity).
         Object task;
+        // Set via runRetired(). Read lazily, so it can be attached after the task is already scheduled.
+        volatile Runnable retired;
 
         PKTask(Runnable runnable, Entity entity, Location location, boolean isAsync, long delay, long interval) {
             this.runnable=runnable;
@@ -119,7 +128,7 @@ public class SchedulerUtil {
                 if (isAsync) task = Bukkit.getScheduler().runTaskAsynchronously(ProjectKorra.plugin, runnable);
                 else task = Bukkit.getScheduler().runTask(ProjectKorra.plugin, runnable);
             }
-            else if (entity != null) task = entity.getScheduler().run(ProjectKorra.plugin, t -> runnable.run(), null);
+            else if (entity != null) task = entity.getScheduler().run(ProjectKorra.plugin, t -> runnable.run(), this::onRetired);
             else if (location != null) task = Bukkit.getRegionScheduler().run(ProjectKorra.plugin, location, t -> runnable.run());
             else if (isAsync) task = Bukkit.getAsyncScheduler().runNow(ProjectKorra.plugin, t -> runnable.run());
             else task = Bukkit.getGlobalRegionScheduler().run(ProjectKorra.plugin, t -> runnable.run());
@@ -130,7 +139,7 @@ public class SchedulerUtil {
                 if (isAsync) task = Bukkit.getScheduler().runTaskLaterAsynchronously(ProjectKorra.plugin, runnable, delay);
                 else task = Bukkit.getScheduler().runTaskLater(ProjectKorra.plugin, runnable, delay);
             }
-            else if (entity != null) task = entity.getScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), null, delay);
+            else if (entity != null) task = entity.getScheduler().runDelayed(ProjectKorra.plugin, t -> runnable.run(), this::onRetired, delay);
             else if (location != null) task = Bukkit.getRegionScheduler().runDelayed(ProjectKorra.plugin, location, t -> runnable.run(), delay);
             else if (isAsync) {
                 long foliaDelay = delay * 50L;
@@ -148,7 +157,7 @@ public class SchedulerUtil {
                 if (isAsync) task = Bukkit.getScheduler().runTaskTimerAsynchronously(ProjectKorra.plugin, runnable, delay, interval);
                 else task = Bukkit.getScheduler().runTaskTimer(ProjectKorra.plugin, runnable, delay, interval);
             }
-            else if (entity != null) task = entity.getScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), null, delay, interval);
+            else if (entity != null) task = entity.getScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), this::onRetired, delay, interval);
             else if (location != null) task = Bukkit.getRegionScheduler().runAtFixedRate(ProjectKorra.plugin, location, t -> runnable.run(), delay, interval);
             else if (isAsync) {
                 long foliaDelay = delay * 50L;
@@ -158,10 +167,24 @@ public class SchedulerUtil {
             else task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(ProjectKorra.plugin, t -> runnable.run(), delay, interval);
             return this;
         }
+
         public void cancel() {
             if (task == null) return;
             if (IS_FOLIA) ((ScheduledTask) task).cancel();
             else ((BukkitTask) task).cancel();
+        }
+
+        // Only does something for entity tasks on Folia. Paper has no concept of a retired entity task.
+        public PKTask runRetired(Runnable retired) {
+            if (retired == null) return this;
+            this.retired = retired;
+            if (IS_FOLIA && entity != null && task == null) retired.run();
+            return this;
+        }
+
+        private void onRetired() {
+            Runnable r = retired;
+            if (r != null) r.run();
         }
     }
 }
