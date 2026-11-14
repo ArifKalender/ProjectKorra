@@ -1097,7 +1097,8 @@ public class PKListener implements Listener {
         }
 
         final ItemStack damaged = event.getItem();
-        for (final ItemStack itemStack : armor.getNewArmor()) {
+		for (int i = 0; i< armor.getNewArmor().length(); i++) {
+			ItemStack itemStack = armor.getNewArmor().get(i);
             if (itemStack != null && damaged.isSimilar(itemStack)) {
                 event.setCancelled(true);
                 break;

@@ -44,8 +44,7 @@ public class BendingManager implements Runnable {
 	public void handleCooldowns() {
 		for (Map.Entry<UUID, BendingPlayer> entry : BendingPlayer.getPlayers().entrySet()) {
 			BendingPlayer bPlayer = entry.getValue();
-
-			bPlayer.removeOldCooldowns();
+			ProjectKorra.getSchedulerUtil().runEntity(bPlayer::removeOldCooldowns, bPlayer.getPlayer());
 		}
 	}
 
@@ -145,7 +144,7 @@ public class BendingManager implements Runnable {
 		this.handleDayNight(); // Done
 		RevertChecker.revertAirBlocks(); // Done
 		HorizontalVelocityTracker.updateAll(); // Done
-		this.handleCooldowns();
+		this.handleCooldowns(); // Done
 		TempArmor.cleanup();
 
 		TempFallingBlock.manage();
