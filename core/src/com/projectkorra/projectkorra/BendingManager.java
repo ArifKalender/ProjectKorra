@@ -145,7 +145,7 @@ public class BendingManager implements Runnable {
 		RevertChecker.revertAirBlocks(); // Done
 		HorizontalVelocityTracker.updateAll(); // Done
 		this.handleCooldowns(); // Done
-		TempArmor.cleanup();
+		TempArmor.cleanup(); // Done
 
 		TempFallingBlock.manage();
 

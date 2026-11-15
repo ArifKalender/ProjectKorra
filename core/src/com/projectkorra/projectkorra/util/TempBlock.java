@@ -1,10 +1,7 @@
 package com.projectkorra.projectkorra.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +9,8 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-import com.projectkorra.projectkorra.ability.Ability;
 import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
@@ -28,35 +25,38 @@ import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.Snowable;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ProjectKorra;
 
 import io.papermc.lib.PaperLib;
 
+/**
+ * @apiNote Not executed on the region scheduler due to the overhead that comes from scheduling for every block in a mass edit; for mass TempBlock instantiation, schedule once via {@link ProjectKorra#getSchedulerUtil()}
+ * @implNote  Uses thread-aware internal structure, but needs thread safety from outside.
+ */
 public class TempBlock {
 
-	private static final Map<Block, LinkedList<TempBlock>> instances_ = new HashMap<>();
+	// FIXME: Switch to concurrent alternative for LinkedList
+	private static final Map<Block, LinkedList<TempBlock>> instances_ = new ConcurrentHashMap<>();
 	/**
 	 * Marked for removal. Doesn't do anything right now
 	 */
 	@Deprecated
 	public static Map<Block, TempBlock> instances = new ConcurrentHashMap<>();
-	private static final PriorityQueue<TempBlock> REVERT_QUEUE = new PriorityQueue<>(128, (t1, t2) -> (int) (t1.revertTime - t2.revertTime));
-	private static boolean REVERT_TASK_RUNNING;
+	private static final PriorityQueue<TempBlock> REVERT_QUEUE = new PriorityQueue<>(128, (t1, t2) -> (int) (t1.revertTime.get() - t2.revertTime.get()));
 
 	private final Block block;
-	private BlockData newData;
-	private BlockState state;
-	private Set<TempBlock> attachedTempBlocks; //Temp Block states that should be reverted as well when the temp block expires (e.g. double blocks)
-	private long revertTime;
+	private volatile BlockData newData;
+	private volatile BlockState state;
+	private final Set<TempBlock> attachedTempBlocks; //Temp Block states that should be reverted as well when the temp block expires (e.g. double blocks)
+	private AtomicLong revertTime;
 	private boolean inRevertQueue;
 	private boolean reverted;
 	private Runnable revertTask = null; //TODO: Migrate scheduler
 	private Optional<CoreAbility> ability = Optional.empty(); // If we want this TempBlock to have an assigned ability created from it
-	private boolean isBendableSource = false;
-	private boolean suffocate = true;
+	private volatile boolean isBendableSource = false;
+	private volatile boolean suffocate = true;
 
 	public TempBlock(final Block block, final Material newtype) {
 		this(block, newtype.createBlockData(), 0);
@@ -69,16 +69,16 @@ public class TempBlock {
 	public TempBlock(final Block block, final Material newtype, final BlockData newData) {
 		this(block, newData, 0);
 	}
-	
+
 	public TempBlock(final Block block, final BlockData newData) {
 		this(block, newData, 0);
 	}
-	
+
 	public TempBlock(final Block block, final BlockData newData, final long revertTime, final CoreAbility ability) {
 		this(block, newData, revertTime);
 		this.ability = Optional.of(ability);
 	}
-	
+
 	public TempBlock(final Block block, final BlockData newData, final CoreAbility ability) {
 		this(block, newData, 0, ability);
 	}
@@ -86,8 +86,9 @@ public class TempBlock {
 	public TempBlock(final Block block, BlockData newData, final long revertTime) {
 		this.block = block;
 		this.newData = newData;
-		this.attachedTempBlocks = new HashSet<>(0);
+		this.attachedTempBlocks = ConcurrentHashMap.newKeySet(0);
 		this.suffocate = ability.isPresent() ? !(ability.get() instanceof WaterAbility) : false;
+		this.revertTime = new AtomicLong(revertTime);
 
 		//Fire griefing will make the state update on its own, so we don't need to update it ourselves
 		if (!FireAbility.canFireGrief() && (newData.getMaterial() == Material.FIRE || newData.getMaterial() == Material.SOUL_FIRE)) {
@@ -115,7 +116,7 @@ public class TempBlock {
 
 			block.setBlockData(newData, applyPhysics(newData.getMaterial()));
 		}
-		
+
 		this.setRevertTime(revertTime);
 	}
 
@@ -178,13 +179,15 @@ public class TempBlock {
 		for (final Block block : new HashSet<>(instances_.keySet())) {
 			revertBlock(block, Material.AIR);
 		}
-		for (final TempBlock tempblock : REVERT_QUEUE) {
-			tempblock.state.update(true, applyPhysics(tempblock.state.getType()));
-			if (tempblock.revertTask != null) {
-				tempblock.revertTask.run();
+		synchronized (REVERT_QUEUE) {
+			for (final TempBlock tempblock : REVERT_QUEUE) {
+				tempblock.state.update(true, applyPhysics(tempblock.state.getType()));
+				if (tempblock.revertTask != null) {
+					tempblock.revertTask.run();
+				}
 			}
+			REVERT_QUEUE.clear();
 		}
-		REVERT_QUEUE.clear();
 	}
 
 	public static void removeAllInWorld(World world) {
@@ -201,7 +204,9 @@ public class TempBlock {
 	 */
 	public static void removeBlock(final Block block) {
 		instances_.get(block).forEach(t -> {
-			REVERT_QUEUE.remove(t);
+			synchronized (REVERT_QUEUE) {
+				REVERT_QUEUE.remove(t);
+			}
 			remove(t);
 		});
 	}
@@ -270,7 +275,7 @@ public class TempBlock {
 	public BlockState getState() {
 		return this.state;
 	}
-	
+
 	public Optional<CoreAbility> getAbility() {
 		return this.ability;
 	}
@@ -292,7 +297,7 @@ public class TempBlock {
 	}
 
 	public long getRevertTime() {
-		return this.revertTime;
+		return this.revertTime.get();
 	}
 
 	/**
@@ -303,10 +308,15 @@ public class TempBlock {
 		if (revertTime <= 0 || state instanceof Container) {
 			return;
 		}
-		this.revertTime = revertTime + System.currentTimeMillis();
+		// TODO: Switch to better synchronization instead of synchronized
+		synchronized (this.revertTime) {
+			this.revertTime.set(revertTime + System.currentTimeMillis());
+		}
 		if (!this.inRevertQueue) {
 			this.inRevertQueue = true;
-			REVERT_QUEUE.add(this);
+			synchronized (REVERT_QUEUE) {
+				REVERT_QUEUE.add(this);
+			}
 		}
 	}
 
@@ -336,15 +346,27 @@ public class TempBlock {
 		this.reverted = true;
 		if (instances_.containsKey(this.block)) {
 			PaperLib.getChunkAtAsync(this.block.getLocation()).thenAccept(result -> {
-				TempBlock last = instances_.get(this.block).getLast();
-				this.block.setBlockData(last.newData); //Set the block to the next in line TempBlock
+				if (ProjectKorra.getSchedulerUtil().ensureLocation(this.block.getLocation())) {
+					TempBlock last = instances_.get(this.block).getLast();
+					this.block.setBlockData(last.newData); //Set the block to the next in line TempBlock
+				} else {
+					ProjectKorra.getSchedulerUtil().runLocation(() -> {
+						TempBlock last = instances_.get(this.block).getLast();
+						this.block.setBlockData(last.newData); //Set the block to the next in line TempBlock
+					}, this.block.getLocation());
+				}
 			});
 		} else { //Set to the original blockstate
-			PaperLib.getChunkAtAsync(this.block.getLocation()).thenAccept(result -> revertState());
+			PaperLib.getChunkAtAsync(this.block.getLocation()).thenAccept(result -> {
+				if (ProjectKorra.getSchedulerUtil().ensureLocation(this.block.getLocation())) revertState();
+				else ProjectKorra.getSchedulerUtil().runLocation(this::revertState, this.block.getLocation());
+			});
 		}
 
 		if (removeFromQueue) { //Remove from the queue if it's in there. We only do this when required because it is an intensive action due to the collection type
-			REVERT_QUEUE.remove(this);
+			synchronized (REVERT_QUEUE) {
+				REVERT_QUEUE.remove(this);
+			}
 		}
 		if (this.revertTask != null) {
 			this.revertTask.run();
@@ -495,7 +517,7 @@ public class TempBlock {
 				"block=[" + block.getX() + "," + block.getY() + "," + block.getZ() + "]" +
 				", newData=" + newData.getAsString() +
 				", attachedTempBlocks=" + attachedTempBlocks.size() +
-				", revertTime=" + (revertTime == 0 ? "N/A" : (revertTime - System.currentTimeMillis()) + "ms") +
+				", revertTime=" + (revertTime.get() == 0 ? "N/A" : (revertTime.get() - System.currentTimeMillis()) + "ms") +
 				", reverted=" + reverted +
 				", revertTask=" + (revertTask != null) +
 				", ability=" + (ability.isPresent() ? ability.get().getClass() : "null") +
@@ -508,19 +530,24 @@ public class TempBlock {
 	public static class TempBlockRevertTask implements Runnable {
 		@Override
 		public void run() {
-			final long currentTime = System.currentTimeMillis();
-			while (!REVERT_QUEUE.isEmpty()) {
-				final TempBlock tempBlock = REVERT_QUEUE.peek(); //Check if the top TempBlock is ready for reverting
-				if (currentTime >= tempBlock.getRevertTime()) {
-					REVERT_QUEUE.poll();
-					if (!tempBlock.reverted) {
-						remove(tempBlock);
-						tempBlock.trueRevertBlock(false); //It's already been removed from the poll(), so don't try remove it again
+			ProjectKorra.getSchedulerUtil().runGlobal(() -> {
+				final long currentTime = System.currentTimeMillis();
+				synchronized (REVERT_QUEUE) {
+					while (!REVERT_QUEUE.isEmpty()) {
+						final TempBlock tempBlock = REVERT_QUEUE.peek(); //Check if the top TempBlock is ready for reverting
+						if (currentTime >= tempBlock.getRevertTime()) {
+							REVERT_QUEUE.poll();
+							if (!tempBlock.reverted) {
+								remove(tempBlock);
+								tempBlock.trueRevertBlock(false); //It's already been removed from the poll(), so don't try remove it again
+							}
+						} else {
+							break;
+						}
 					}
-				} else {
-					break;
 				}
-			}
+			});
+
 		}
 	}
 }
