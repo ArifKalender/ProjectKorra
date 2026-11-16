@@ -1,14 +1,8 @@
 package com.projectkorra.projectkorra.util;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.projectkorra.projectkorra.ability.CoreAbility;
@@ -37,14 +31,13 @@ import io.papermc.lib.PaperLib;
  */
 public class TempBlock {
 
-	// FIXME: Switch to concurrent alternative for LinkedList
-	private static final Map<Block, LinkedList<TempBlock>> instances_ = new ConcurrentHashMap<>();
+	private static final Map<Block, ConcurrentLinkedDeque<TempBlock>> instances_ = new ConcurrentHashMap<>();
 	/**
 	 * Marked for removal. Doesn't do anything right now
 	 */
 	@Deprecated
 	public static Map<Block, TempBlock> instances = new ConcurrentHashMap<>();
-	private static final PriorityQueue<TempBlock> REVERT_QUEUE = new PriorityQueue<>(128, (t1, t2) -> (int) (t1.revertTime.get() - t2.revertTime.get()));
+	private static final PriorityQueue<TempBlock> REVERT_QUEUE = new PriorityQueue<>(128, Comparator.comparingLong(t -> t.revertTime.get()));
 
 	private final Block block;
 	private volatile BlockData newData;
@@ -53,7 +46,7 @@ public class TempBlock {
 	private AtomicLong revertTime;
 	private boolean inRevertQueue;
 	private boolean reverted;
-	private Runnable revertTask = null; //TODO: Migrate scheduler
+	private Runnable revertTask = null;
 	private Optional<CoreAbility> ability = Optional.empty(); // If we want this TempBlock to have an assigned ability created from it
 	private volatile boolean isBendableSource = false;
 	private volatile boolean suffocate = true;
@@ -137,7 +130,7 @@ public class TempBlock {
 	 * @param block The block location
 	 * @return The list of TempBlocks
 	 */
-	public static LinkedList<TempBlock> getAll(Block block) {
+	public static ConcurrentLinkedDeque<TempBlock> getAll(Block block) {
 		return instances_.get(block);
 	}
 
@@ -148,7 +141,7 @@ public class TempBlock {
 	 */
 	private static void put(Block block, TempBlock tempBlock) {
 		if (!instances_.containsKey(block)) {
-			instances_.put(block, new LinkedList<>());
+			instances_.put(block, new ConcurrentLinkedDeque<>());
 		}
 		instances_.get(block).add(tempBlock);
 	}
@@ -181,10 +174,12 @@ public class TempBlock {
 		}
 		synchronized (REVERT_QUEUE) {
 			for (final TempBlock tempblock : REVERT_QUEUE) {
-				tempblock.state.update(true, applyPhysics(tempblock.state.getType()));
-				if (tempblock.revertTask != null) {
-					tempblock.revertTask.run();
-				}
+				ProjectKorra.getSchedulerUtil().runLocation(() -> {
+					tempblock.state.update(true, applyPhysics(tempblock.state.getType()));
+					if (tempblock.revertTask != null) {
+						tempblock.revertTask.run();
+					}
+				}, tempblock.getLocation());
 			}
 			REVERT_QUEUE.clear();
 		}
@@ -230,34 +225,38 @@ public class TempBlock {
 	 * @param defaulttype The default material to revert to if it can't
 	 */
 	public static void revertBlock(final Block block, final Material defaulttype) {
-		if (instances_.containsKey(block)) {
-			//We clone the list first, then remove before reverting. The tempblock list is cloned so we get no concurrent modification exceptions
-			List<TempBlock> tempBlocks = new ArrayList<>(instances_.get(block));
-			tempBlocks.forEach((b) -> {
-				TempBlock.remove(b);
-				b.trueRevertBlock();
-			});
-		} else {
-			if ((defaulttype == Material.LAVA) && GeneralMethods.isAdjacentToThreeOrMoreSources(block, true)) {
-				final BlockData data = Material.LAVA.createBlockData();
 
-				if (data instanceof Levelled) {
-					((Levelled) data).setLevel(0);
-				}
-
-				block.setBlockData(data, applyPhysics(data.getMaterial()));
-			} else if ((defaulttype == Material.WATER) && GeneralMethods.isAdjacentToThreeOrMoreSources(block)) {
-				final BlockData data = Material.WATER.createBlockData();
-
-				if (data instanceof Levelled) {
-					((Levelled) data).setLevel(0);
-				}
-
-				block.setBlockData(data, applyPhysics(data.getMaterial()));
+		ProjectKorra.getSchedulerUtil().runLocation(() -> {
+			if (instances_.containsKey(block)) {
+				//We clone the list first, then remove before reverting. The tempblock list is cloned so we get no concurrent modification exceptions
+				List<TempBlock> tempBlocks = new ArrayList<>(instances_.get(block));
+				tempBlocks.forEach((b) -> {
+					TempBlock.remove(b);
+					b.trueRevertBlock();
+				});
 			} else {
-				block.setType(defaulttype, applyPhysics(defaulttype));
-			}
-		}
+				if ((defaulttype == Material.LAVA) && GeneralMethods.isAdjacentToThreeOrMoreSources(block, true)) {
+					final BlockData data = Material.LAVA.createBlockData();
+
+					if (data instanceof Levelled) {
+						((Levelled) data).setLevel(0);
+					}
+
+					block.setBlockData(data, applyPhysics(data.getMaterial()));
+				} else if ((defaulttype == Material.WATER) && GeneralMethods.isAdjacentToThreeOrMoreSources(block)) {
+					final BlockData data = Material.WATER.createBlockData();
+
+					if (data instanceof Levelled) {
+						((Levelled) data).setLevel(0);
+					}
+
+					block.setBlockData(data, applyPhysics(data.getMaterial()));
+				} else {
+					block.setType(defaulttype, applyPhysics(defaulttype));
+				}
+				}
+		}, block.getLocation());
+
 	}
 
 	public Block getBlock() {
@@ -280,11 +279,11 @@ public class TempBlock {
 		return this.ability;
 	}
 
-	public Runnable getRevertTask() { //TODO: Migrate scheduler
+	public Runnable getRevertTask() {
 		return this.revertTask;
 	}
 
-	public void setRevertTask(final Runnable task) { //TODO: Migrate scheduler
+	public void setRevertTask(final Runnable task) {
 		this.revertTask = task;
 	}
 
@@ -346,20 +345,14 @@ public class TempBlock {
 		this.reverted = true;
 		if (instances_.containsKey(this.block)) {
 			PaperLib.getChunkAtAsync(this.block.getLocation()).thenAccept(result -> {
-				if (ProjectKorra.getSchedulerUtil().ensureLocation(this.block.getLocation())) {
+				ProjectKorra.getSchedulerUtil().runLocation(() -> {
 					TempBlock last = instances_.get(this.block).getLast();
 					this.block.setBlockData(last.newData); //Set the block to the next in line TempBlock
-				} else {
-					ProjectKorra.getSchedulerUtil().runLocation(() -> {
-						TempBlock last = instances_.get(this.block).getLast();
-						this.block.setBlockData(last.newData); //Set the block to the next in line TempBlock
-					}, this.block.getLocation());
-				}
+				}, this.block.getLocation());
 			});
 		} else { //Set to the original blockstate
 			PaperLib.getChunkAtAsync(this.block.getLocation()).thenAccept(result -> {
-				if (ProjectKorra.getSchedulerUtil().ensureLocation(this.block.getLocation())) revertState();
-				else ProjectKorra.getSchedulerUtil().runLocation(this::revertState, this.block.getLocation());
+				ProjectKorra.getSchedulerUtil().runLocation(this::revertState, this.block.getLocation());
 			});
 		}
 
@@ -369,7 +362,7 @@ public class TempBlock {
 			}
 		}
 		if (this.revertTask != null) {
-			this.revertTask.run();
+			ProjectKorra.getSchedulerUtil().runLocation(() -> {this.revertTask.run();}, this.block.getLocation());
 		}
 
 		for (TempBlock attached : attachedTempBlocks) {
@@ -486,7 +479,7 @@ public class TempBlock {
 	/**
 	 * Will be removed in future. Exactly the same as a Runnable so no point having a unique class for it
 	 */
-	public interface RevertTask extends Runnable { } //TODO: Migrate scheduler
+	public interface RevertTask extends Runnable { }
 
 	/**
 	 * Whether the physics should be updated or not. Fire should be updated so it can burn and spread IF
@@ -526,7 +519,6 @@ public class TempBlock {
 				'}';
 	}
 
-	//TODO: Migrate scheduler
 	public static class TempBlockRevertTask implements Runnable {
 		@Override
 		public void run() {
