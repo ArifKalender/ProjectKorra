@@ -29,9 +29,17 @@ public class SchedulerUtil {
     }
 
     public PKTask runEntity(Runnable runnable, Entity entity) {
+        if (this.ensureLocation(entity.getLocation())) {
+            runnable.run();
+            return null;
+        }
         return new PKTask(runnable, entity).run();
     }
     public PKTask runLocation(Runnable runnable, Location location) {
+        if (this.ensureLocation(location)) {
+            runnable.run();
+            return null;
+        }
         return new PKTask(runnable, location).run();
     }
     public PKTask runGlobal(Runnable runnable) {
